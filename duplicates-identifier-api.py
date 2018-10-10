@@ -124,22 +124,22 @@ def harvest_datasets(dataset_harvest_list):
 
 def remove_duplicate_datasets(duplicate_datasets):
 
-   # conn_string = "host='terraform-20180618152009351000000001.clsowbdquocd.us-east-1.rds.amazonaws.com' dbname='datagov_catalog_db' user='datagovrds' password='ckanckan'"
+    conn_string = "host='terraform-20180618152009351000000001.clsowbdquocd.us-east-1.rds.amazonaws.com' dbname='datagov_catalog_db' user='datagovrds' password='ckanckan'"
     # print "Connecting to database\n ->%s" % (conn_string)
 
-   # conn = psycopg2.connect(conn_string)
-  #  cursor = conn.cursor()
+    conn = psycopg2.connect(conn_string)
+    cursor = conn.cursor()
     with open('duplicate_datasets_out.txt', 'a') as f:
         for data in duplicate_datasets:
-            print(data)
-            #           cursor.execute("update package set state='deleted' where name='" + data + "';")
+           # print(data)
+            cursor.execute("update package set state='deleted' where name='" + data + "';")
             print >> f, "update package set state='to_delete' where name='" + data + "';"
 
 
     #  cursor.execute("update package set state='deleted' where id='" + data + "';")
-    #        conn.commit()
+            conn.commit()
 
-    #conn.close()
+    conn.close()
 
 
 if __name__ == "__main__":
