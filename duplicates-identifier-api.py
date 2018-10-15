@@ -124,7 +124,7 @@ def harvest_datasets(dataset_harvest_list):
 
 def remove_duplicate_datasets(duplicate_datasets):
 
-    conn_string = "host='terraform-20180618152009351000000001.clsowbdquocd.us-east-1.rds.amazonaws.com' dbname='datagov_catalog_db' user='datagovrds' password='ckanckan'"
+    conn_string = "host='localhost' dbname='test' user='ckan' password='*****'"
     # print "Connecting to database\n ->%s" % (conn_string)
 
     conn = psycopg2.connect(conn_string)
