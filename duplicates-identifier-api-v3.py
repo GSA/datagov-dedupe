@@ -52,7 +52,7 @@ def get_dataset_list(datagov_url, org_name):
     for identifier in org_harvest:
         dataset_list = requests.get(
             datagov_url + '/api/action/package_search?q=identifier:"' + identifier + '"' +
-            '&fq=type:dataset&sort=metadata_modified+asc&rows=1000')
+            '&fq=type:dataset&sort=metadata_created+desc&rows=1000')
         harvest_data_count = dataset_list.json()['result']['count']
         start = 0
         while start <= harvest_data_count:
