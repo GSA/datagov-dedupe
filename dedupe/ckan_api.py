@@ -99,8 +99,8 @@ class CkanApiClient(object):
         return response.json()['result']['results']
 
     def get_organizations(self):
-        response = self.get('/action/package_search?q=source_type:datajson&rows=1000')
-        return response.json()['result']['results']
+        response = self.get('/action/organization_list')
+        return response.json()['result']
 
     def remove_package(self, package_id):
         if self.dry_run:

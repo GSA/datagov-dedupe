@@ -108,7 +108,7 @@ class Deduper(object):
                 log.debug('This package is the most recent, not removing package=%s', dataset['id'])
                 continue
 
-            self.remove_package(dataset['id'])
+            self.remove_package(dataset)
             duplicate_count += 1
 
         return duplicate_count

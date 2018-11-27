@@ -14,14 +14,8 @@ log = logging.getLogger('dedupe')
 
 
 def get_org_list(ckan):
-    organizations_list = []
-
     log.debug('Fetching organizations...')
-    org_list = ckan.get("/action/package_search?q=source_type:datajson&rows=1000")
-
-    for organization in org_list:
-        if organization['organization']['name'] not in organizations_list:
-            organizations_list.append(organization['organization']['name'])
+    organizations_list = ckan.get_organizations()
 
     log.debug('Found organizations count=%d', len(organizations_list))
     return organizations_list
