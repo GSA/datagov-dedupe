@@ -19,6 +19,10 @@ class CkanApiClient(object):
 
     def request(self, method, path, **kwargs):
         url = '%s/api%s' % (self.api_url, path)
+
+        # Set a 60 second timeout for connections
+        kwargs.setdefault('timeout', 60)
+
         response = self.client.request(method, url, **kwargs)
 
         assert response.status_code == 200
