@@ -40,6 +40,26 @@ class CkanApiClient(object):
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
 
+    def get_oldest_dataset(self, harvest_identifier):
+        response = self.request('GET', '/action/package_search', params={
+            'q': 'identifier:"%s"' % harvest_identifier,
+            'fq': 'type:dataset',
+            'sort': 'metadata_created desc',
+            'rows': 1,
+            })
+
+        return response.json()['result']['results'][0]
+
+    def get_newest_dataset(self, harvest_identifier):
+        response = self.request('GET', '/action/package_search', params={
+            'q': 'identifier:"%s"' % harvest_identifier,
+            'fq': 'type:dataset',
+            'sort': 'metadata_created asc',
+            'rows': 1,
+            })
+
+        return response.json()['result']['results'][0]
+
 
 def get_org_list(ckan):
     organizations_list = []
@@ -55,105 +75,102 @@ def get_org_list(ckan):
     log.debug('Found organizations count=%d', len(organizations_list))
     return organizations_list
 
+def replace_oldest_dataset_with_newest(ckan, organization_name, harvest_identifier):
+    oldest_dataset = ckan.get_oldest_dataset(harvest_identifier)
+    newest_dataset = ckan.get_newest_dataset(harvest_identifier)
 
-def get_dataset_list(ckan, org_name):
+    name = oldest_dataset['name']
+
+    # update oldest dataset
+    # update neweset dataset
+
+    return newest_dataset
+
+
+def remove_package(ckan, package):
+    log.info('Removing duplicate package=%s', package['id'])
+
+def dedupe_organization(ckan, org_name):
     '''
         Get the datasets on data.gov that we have for the organization
     '''
 
-    dataset_keep = []
-    org_harvest = []
-    dataset_harvest_list = []
-    totla_dup_data = []
-    duplicates = []
-    dup_log = []
-    dup_json_log = []
-
-
     # get list of harvesters for the organization
-    log.info('Fetching harvesters for organization=%s', org_name)
-    org_harvest_tmp = ckan.get('/3/action/package_search', params={
+    log.debug('Fetching harvesters for organization=%s', org_name)
+    response = ckan.get('/3/action/package_search', params={
         'q': 'organization:%s' % org_name,
         'facet.field': '["identifier"]',
         'facet.limit': -1,
         'facet.mincount': 2,
         })
 
-    log.debug('%r', org_harvest_tmp)
-    org_harvest_tmp = org_harvest_tmp.json()['result']['search_facets']['identifier']['items']
-    log.info('Found harvest identifiers for organization=%s count=%d', org_name, len(org_harvest_tmp))
+    harvester_identifiers = response.json()['result']['search_facets']['identifier']['items']
+    log.info('Found harvest identifiers for organization=%s count=%d', org_name, len(harvester_identifiers))
 
-    for harvest in org_harvest_tmp:
-        org_harvest.append(harvest['name'])
-
-    for identifier in org_harvest:
-        log.info('Fetching count of datasets for harvest organization=%s identifier=%s',
+    duplicate_count = 0
+    for harvester in harvester_identifiers:
+        identifier = harvester['name']
+        log.debug('Fetching count of datasets for harvest organization=%s identifier=%s',
                  org_name, identifier)
         dataset_list = ckan.get('/action/package_search', params={
             'q': 'identifier:"%s"' % identifier,
             'fq': 'type:dataset',
-            'sort': 'metadata_created+desc',
+            'sort': 'metadata_created desc',
             'rows': 0,
             })
 
         harvest_data_count = dataset_list.json()['result']['count']
-        start = 0
-        rows = 1000
-        while start <= harvest_data_count:
-            try:
-                log.info(
-                    'Batch fetching datasets for harvest organization=%s identifier=%s offset=%d rows=%d',
-                    org_name, identifier, start, rows)
+        log.info('Found packages for organization=%s identifier=%s count=%d', org_name, identifier, harvest_data_count)
+
+        if harvest_data_count <= 1:
+            log.debug('No duplicates found for organization=%s identifier=%s', org_name, identifier)
+            continue
+
+        # We want to keep the most recent dataset, but there is a name conflict
+        # with the oldest dataset. Rename the oldest dataset so that we can
+        # give it's name to the newest
+        new_dataset = replace_oldest_dataset_with_newest(ckan, org_name, identifier)
+
+        # Now we can collect the datasets for removal
+        def get_datasets(total, rows=1000):
+            start = 0
+            while start < total:
+                log.debug(
+                    'Batch fetching datasets for harvest organization=%s identifier=%s offset=%d rows=%d total=%d',
+                    org_name, identifier, start, rows, total)
                 dataset_list = ckan.get('/action/package_search', params={
                     'q': 'identifier:"%s"' % identifier,
                     'start': start,
                     'rows': rows,
                     })
-                dataset_harvest_list += dataset_list.json()['result']['results']
                 start += rows
-            except IndexError:
-                time.sleep(20)
-                continue
-        if dataset_list.status_code == 200:
-            try:
-                dataset_count = dataset_list.json()['result']['count']
-                data = dataset_list.json()['result']['results']
 
-                if dataset_count > 1:
-                    if data[dataset_count - 1]['id'] not in dataset_keep and \
-                            data[dataset_count - 1]['organization']['name'] == org_name:
-                        dataset_keep.append(data[dataset_count - 1]['id'])
-                else:
-                    dataset_keep.append(dataset_list['id'])
+                for dataset in dataset_list.json()['result']['results']:
+                    yield dataset
 
-            except IndexError:
+        for dataset in get_datasets(harvest_data_count):
+            if dataset['organization']['name'] != org_name:
+                log.warn('Dataset harvested by organization but not part of organization organization=%s identifier=%s pkg_org_name=%s pkg_name=%s',
+                         org_name, identifier, dataset['organization']['name'], dataset['name'])
                 continue
 
-        for dataset_harvest in dataset_harvest_list:
-            if dataset_harvest['id'] not in totla_dup_data and dataset_harvest['organization']['name'] == org_name:
-                totla_dup_data.append(dataset_harvest['id'])
+            if dataset['id'] == new_dataset['id']:
+                log.debug('This package is the most recent, not removing package=%s', dataset['id'])
+                continue
 
-        duplicates += list(set(totla_dup_data) - set(dataset_keep))
+            remove_package(ckan, dataset)
+            duplicate_count += 1
+
+    log.info('Summary orgaization=%s duplicate_count=%d', org_name, duplicate_count)
 
 
-    log.info('Found duplicate datasets organization=%s count=%d', org_name, len(duplicates))
-    return duplicates
+def rename_dataset_for_purge(ckan, dataset):
+    pass
 
-#def remove_duplicate_datasets(duplicate_datasets, o_name,sysadmin_api_key):
-def remove_duplicate_datasets(duplicate_datasets):
-    # conn_string = "' dbname='' user='' password=''"
-    # print "Connecting to database\n ->%s" % (conn_string)
 
-    # conn = psycopg2.connect(conn_string)
-    #  cursor = conn.cursor()
-    with open('duplicate_datasets__out.txt', 'a') as f:
-    #with open('duplicate_datasets_' + org_name + '_out.txt', 'a') as f:
-        for data in duplicate_datasets:
-            #cursor.execute("update package set state='duplicate-removed' where name='" + data + "';")
-            print >> f, "update package set state='duplicate-removed' where name='" + data + "';"
-    #        conn.commit()
+def remove_duplicate_datasets(ckan, duplicate_datasets):
+    pass
 
-    # conn.close()
 
 def run():
     '''
@@ -163,23 +180,29 @@ def run():
     parser.add_argument('--api-key', default=os.getenv('CKAN_API_KEY', None), help='Admin API key')
     parser.add_argument('--api-url', default='https://admin-catalog.data.gov',
                         help='The API base URL to query')
-    parser.add_argument('organization_id', default=None,
-                        help='The API base URL to query')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Treat the API as read-only and make no changes.')
+    parser.add_argument('organization_name', nargs='*',
+                        help='The name of the organization.')
 
     args = parser.parse_args()
 
     ckan = CkanApiClient(args.api_url, args.api_key)
 
-    if args.organization_id:
-        org_list = [args.organization_id]
+    if args.organization_name:
+        org_list = args.organization_name
     else:
         # get all organizations that have datajson harvester
         org_list = get_org_list(ckan)
 
     # get list of duplicate_datasets
     for organization in org_list:
-        dataset_dup_tmp = get_dataset_list(ckan, organization)
-        #remove_duplicate_datasets(dataset_dup_tmp)
+        try:
+            dedupe_organization(ckan, organization)
+        except Exception as e:
+            log.exception(e)
+            # Continue with the next organization
+            continue
 
 
 if __name__ == "__main__":
