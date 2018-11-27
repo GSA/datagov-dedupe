@@ -5,8 +5,9 @@ import logging.config
 import os
 import time
 
-from dedupe.deduper import Deduper
+from dedupe.audit import RemovedPackageLog
 from dedupe.ckan_api import CkanApiClient
+from dedupe.deduper import Deduper
 
 logging.config.fileConfig('logging.ini')
 log = logging.getLogger('dedupe')
@@ -42,6 +43,10 @@ def run():
     args = parser.parse_args()
 
     ckan_api = CkanApiClient(args.api_url, args.api_key, dry_run=args.dry_run)
+    removed_package_log = RemovedPackageLog()
+
+    if args.dry_run:
+        log.info('Dry run enabled')
 
     if args.organization_name:
         org_list = args.organization_name
@@ -54,7 +59,7 @@ def run():
     # Loop over the organizations one at a time
     for organization in org_list:
         try:
-            deduper = Deduper(organization, ckan_api)
+            deduper = Deduper(organization, ckan_api, removed_package_log)
             deduper.dedupe()
         except Exception as e:
             log.exception(e)

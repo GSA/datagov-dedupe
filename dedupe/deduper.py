@@ -15,10 +15,11 @@ class ContextLoggerAdapter(logging.LoggerAdapter):
 
 
 class Deduper(object):
-    def __init__(self, organization_name, ckan_api):
+    def __init__(self, organization_name, ckan_api, removed_package_log=None):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
+        self.removed_package_log = removed_package_log
 
     def dedupe(self):
         # get list of harvesters for the organization
@@ -54,6 +55,9 @@ class Deduper(object):
 
     def remove_package(self, package):
         self.log.info('Removing duplicate package=%s', package['id'])
+        if self.removed_package_log:
+            self.removed_package_log.add(package)
+
         self.ckan_api.remove_package(package['id'])
 
     def dedupe_harvest_identifier(self, identifier):
@@ -65,7 +69,7 @@ class Deduper(object):
 
         log = ContextLoggerAdapter(module_log, {'organization': self.organization_name, 'identifier': identifier})
 
-        log.debug('Fetching count of datasets for harvest identifier')
+        log.debug('Fetching number of datasets for harvest identifier')
         harvest_data_count = self.ckan_api.get_dataset_count(self.organization_name, identifier)
         log.info('Found packages count=%d', harvest_data_count)
 

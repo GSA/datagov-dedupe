@@ -5,6 +5,7 @@ import mock
 from ..ckan_api import CkanApiClient
 from ..deduper import Deduper
 
+
 class TestDeduper(unittest.TestCase):
     def setUp(self):
         self.ckan_api = mock.Mock(CkanApiClient)
