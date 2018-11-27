@@ -4,61 +4,10 @@ import logging
 import os
 import time
 
-import requests
+from dedupe import CkanApiClient, Deduper
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('dedupe')
-
-
-class CkanApiException(Exception):
-    def __init__(self, message, response):
-        super(CkanApiException, self).__init__(message)
-        self.response = response
-
-
-class CkanApiClient(object):
-    '''
-    Represents a client to query and submit requests to the CKAN API.
-    '''
-
-    def __init__(self, api_url, api_key):
-        self.api_url = api_url
-        self.client = requests.Session()
-        self.client.headers.update(Authorization=api_key)
-
-    def request(self, method, path, **kwargs):
-        log.debug('Api request method=%s path=%s', method, path)
-        url = '%s/api%s' % (self.api_url, path)
-        response = self.client.request(method, url, **kwargs)
-        if not response.status_code == 200 or not response.json()['success']:
-            log.error('CKAN API request failed response=%s', response.content)
-            raise CkanApiException('CKAN API request failed.', response)
-
-
-        return response
-
-    def get(self, path, **kwargs):
-        return self.request('GET', path, **kwargs)
-
-    def get_oldest_dataset(self, harvest_identifier):
-        response = self.request('GET', '/action/package_search', params={
-            'q': 'identifier:"%s"' % harvest_identifier,
-            'fq': 'type:dataset',
-            'sort': 'metadata_created desc',
-            'rows': 1,
-            })
-
-        return response.json()['result']['results'][0]
-
-    def get_newest_dataset(self, harvest_identifier):
-        response = self.request('GET', '/action/package_search', params={
-            'q': 'identifier:"%s"' % harvest_identifier,
-            'fq': 'type:dataset',
-            'sort': 'metadata_created asc',
-            'rows': 1,
-            })
-
-        return response.json()['result']['results'][0]
 
 
 def get_org_list(ckan):
@@ -75,18 +24,6 @@ def get_org_list(ckan):
     log.debug('Found organizations count=%d', len(organizations_list))
     return organizations_list
 
-def replace_oldest_dataset_with_newest(ckan, organization_name, harvest_identifier):
-    oldest_dataset = ckan.get_oldest_dataset(harvest_identifier)
-    newest_dataset = ckan.get_newest_dataset(harvest_identifier)
-
-    name = oldest_dataset['name']
-
-    # update oldest dataset
-    # update neweset dataset
-
-    return newest_dataset
-
-
 def remove_package(ckan, package):
     log.info('Removing duplicate package=%s', package['id'])
 
@@ -94,6 +31,8 @@ def dedupe_organization(ckan, org_name):
     '''
         Get the datasets on data.gov that we have for the organization
     '''
+
+    deduper = Deduper(org_name, ckan)
 
     # get list of harvesters for the organization
     log.debug('Fetching harvesters for organization=%s', org_name)
@@ -129,7 +68,7 @@ def dedupe_organization(ckan, org_name):
         # We want to keep the most recent dataset, but there is a name conflict
         # with the oldest dataset. Rename the oldest dataset so that we can
         # give it's name to the newest
-        new_dataset = replace_oldest_dataset_with_newest(ckan, org_name, identifier)
+        new_dataset = deduper.replace_oldest_dataset_with_newest(ckan, org_name, identifier)
 
         # Now we can collect the datasets for removal
         def get_datasets(total, rows=1000):
