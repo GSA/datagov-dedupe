@@ -5,6 +5,8 @@ most recent duplicate and removes the rest.
 
 import logging
 
+from .ckan_api import CkanApiException
+
 module_log = logging.getLogger(__name__)
 
 
@@ -29,14 +31,25 @@ class Deduper(object):
 
         duplicate_count = 0
         for identifier in harvester_identifiers:
-            duplicate_count += self.dedupe_harvest_identifier(identifier['name'])
+            try:
+                duplicate_count += self.dedupe_harvest_identifier(identifier['name'])
+            except CkanApiException, e:
+                self.log.error('Failed to dedupe harvest identifier=%s', identifier['name'])
+                continue
 
         self.log.info('Summary duplicate_count=%d', duplicate_count)
 
     def replace_oldest_dataset_with_newest(self, harvest_identifier):
+        self.log.debug('Fetching oldest and most recent pacakges for harvest identifier=%s', harvest_identifier)
         oldest_dataset = self.ckan_api.get_oldest_dataset(harvest_identifier)
         newest_dataset = self.ckan_api.get_newest_dataset(harvest_identifier)
 
+        self.log.info('Replacing oldest dataset with most recent oldest=%r newest=%r identifier=%s',
+                      (oldest_dataset['id'], oldest_dataset['name']),
+                      (newest_dataset['id'], newest_dataset['name']),
+                      harvest_identifier)
+
+        # save the original dataset name to give it to the most recent
         name = oldest_dataset['name']
 
         # update oldest dataset
@@ -54,7 +67,7 @@ class Deduper(object):
         return newest_dataset
 
     def remove_package(self, package):
-        self.log.info('Removing duplicate package=%s', package['id'])
+        self.log.info('Removing duplicate package=%r', (package['id'], package['name']))
         if self.removed_package_log:
             self.removed_package_log.add(package)
 
@@ -100,15 +113,20 @@ class Deduper(object):
         duplicate_count = 0
         for dataset in get_datasets(harvest_data_count):
             if dataset['organization']['name'] != self.organization_name:
-                log.warning('Dataset harvested by organization but not part of organization pkg_org_name=%s pkg_name=%s',
-                            dataset['organization']['name'], dataset['name'])
+                log.warning('Dataset harvested by organization but not part of organization pkg_org_name=%s package=%r',
+                            dataset['organization']['name'], (dataset['id'], dataset['name']))
                 continue
 
             if dataset['id'] == new_dataset['id']:
                 log.debug('This package is the most recent, not removing package=%s', dataset['id'])
                 continue
 
-            self.remove_package(dataset)
             duplicate_count += 1
+            try:
+                self.remove_package(dataset)
+            except CkanApiException, e:
+                log.error('Failed to remove dataset status_code=%s package=%r', e.response.status_code, (dataset['id'], dataset['name']))
+                continue
+
 
         return duplicate_count
