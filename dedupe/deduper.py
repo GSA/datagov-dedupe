@@ -39,12 +39,22 @@ class Deduper(object):
         name = oldest_dataset['name']
 
         # update oldest dataset
+        self.log.info('Renaming oldest dataset identifier=%s package=%s name=%s',
+                      harvest_identifier, oldest_dataset['id'], oldest_dataset['name'])
+        oldest_dataset['name'] = '%s-dedupe-purge' % name
+        self.ckan_api.update_package(oldest_dataset)
+
         # update neweset dataset
+        self.log.info('Renaming most recent dataset identifier=%s package=%s name=%s',
+                      harvest_identifier, newest_dataset['id'], newest_dataset['name'])
+        newest_dataset['name'] = name
+        self.ckan_api.update_package(newest_dataset)
 
         return newest_dataset
 
     def remove_package(self, package):
         self.log.info('Removing duplicate package=%s', package['id'])
+        self.ckan_api.remove_package(package['id'])
 
     def dedupe_harvest_identifier(self, identifier):
         '''
@@ -69,7 +79,7 @@ class Deduper(object):
         # give it's name to the newest
         new_dataset = self.replace_oldest_dataset_with_newest(identifier)
 
-        # Now we can collect the datasets for removal
+        # Fetch datasets in batches
         def get_datasets(total, rows=1000):
             start = 0
             while start < total:
@@ -82,6 +92,7 @@ class Deduper(object):
                 for dataset in datasets:
                     yield dataset
 
+        # Now we can collect the datasets for removal
         duplicate_count = 0
         for dataset in get_datasets(harvest_data_count):
             if dataset['organization']['name'] != self.organization_name:
@@ -93,7 +104,7 @@ class Deduper(object):
                 log.debug('This package is the most recent, not removing package=%s', dataset['id'])
                 continue
 
-            self.remove_package(dataset)
+            self.remove_package(dataset['id'])
             duplicate_count += 1
 
         return duplicate_count

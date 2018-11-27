@@ -12,9 +12,18 @@ class TestDeduper(unittest.TestCase):
 
     def test_replace_dataset(self):
         harvest_identifier = 'harvest-123'
-        self.ckan_api.get_oldest_dataset.return_value = dict(name='test-dataset')
-        self.ckan_api.get_newest_dataset.return_value = dict(name='test-dataset')
+
+        self.ckan_api.get_oldest_dataset.return_value = dict(id='old', name='test-dataset-old')
+        self.ckan_api.get_newest_dataset.return_value = dict(id='new', name='test-dataset-new')
+
         self.deduper.replace_oldest_dataset_with_newest(harvest_identifier)
 
         self.ckan_api.get_oldest_dataset.assert_called_once_with(harvest_identifier)
         self.ckan_api.get_newest_dataset.assert_called_once_with(harvest_identifier)
+
+        expected_update_package_calls = [
+            mock.call(dict(id='old', name='test-dataset-old-dedupe-purge')), # old package renamed
+            mock.call(dict(id='new', name='test-dataset-old')), # new package takes original name
+        ]
+
+        assert self.ckan_api.update_package.mock_calls == expected_update_package_calls

@@ -41,20 +41,20 @@ def run():
 
     args = parser.parse_args()
 
-    ckan = CkanApiClient(args.api_url, args.api_key)
+    ckan_api = CkanApiClient(args.api_url, args.api_key, dry_run=args.dry_run)
 
     if args.organization_name:
         org_list = args.organization_name
     else:
         # get all organizations that have datajson harvester
-        org_list = get_org_list(ckan)
+        org_list = get_org_list(ckan_api)
 
     log.info('Deduplicating organizations=%d', len(org_list))
 
     # Loop over the organizations one at a time
     for organization in org_list:
         try:
-            deduper = Deduper(organization, ckan)
+            deduper = Deduper(organization, ckan_api)
             deduper.dedupe()
         except Exception as e:
             log.exception(e)

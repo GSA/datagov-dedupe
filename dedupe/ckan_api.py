@@ -1,5 +1,12 @@
 
+import logging
+
 import requests
+
+log = logging.getLogger(__name__)
+
+READ_ONLY_METHODS = ['GET']
+
 
 class CkanApiException(Exception):
     def __init__(self, message, response):
@@ -7,18 +14,26 @@ class CkanApiException(Exception):
         self.response = response
 
 
+class DryRunException(Exception):
+    pass
+
+
 class CkanApiClient(object):
     '''
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key):
+    def __init__(self, api_url, api_key, dry_run=False):
         self.api_url = api_url
+        self.dry_run = dry_run
         self.client = requests.Session()
         self.client.headers.update(Authorization=api_key)
 
     def request(self, method, path, **kwargs):
         url = '%s/api%s' % (self.api_url, path)
+
+        if self.dry_run and method not in READ_ONLY_METHODS:
+            raise DryRunException('Cannot call method in dry_run method=%s' % method)
 
         # Set a 60 second timeout for connections
         kwargs.setdefault('timeout', 60)
@@ -87,7 +102,18 @@ class CkanApiClient(object):
         response = self.get('/action/package_search?q=source_type:datajson&rows=1000')
         return response.json()['result']['results']
 
-    def remove_package(self, package):
-        self.request('DELETE', '/action/package_search', params={
-            'id': package['id'],
+    def remove_package(self, package_id):
+        if self.dry_run:
+            log.info('Not removing package in dry_run package=%s', package_id)
+            return
+
+        self.request('DELETE', '/action/package_delete', params={
+            'id': package_id,
         })
+
+    def update_package(self, package):
+        if self.dry_run:
+            log.info('Not updating package in dry_run package=%s', package['id'])
+            return
+
+        self.request('POST', '/action/package_update', json=package)
