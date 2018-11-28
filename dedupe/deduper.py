@@ -59,6 +59,11 @@ class Deduper(object):
         # save the original dataset name to give it to the most recent
         name = oldest_dataset['name']
 
+        if name.endswith('-dedupe-purge'):
+            self.log.warning('Package already renamed, continuing without rename package=%r',
+                             (oldest_dataset['id'], oldest_dataset['name']))
+            return newest_dataset
+
         # update oldest dataset
         self.log.info('Renaming oldest dataset identifier=%s package=%s name=%s',
                       harvest_identifier, oldest_dataset['id'], oldest_dataset['name'])
