@@ -18,5 +18,5 @@ class RemovedPackageLog(object):
 
 
     def add(self, package):
-        log.debug('Saving package to removed package log packge=%s', package['id'])
+        log.debug('Saving package to removed package log package=%s', package['id'])
         self.log.write(json.dumps(package) + '\n')

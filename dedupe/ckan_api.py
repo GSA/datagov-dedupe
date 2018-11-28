@@ -14,7 +14,27 @@ class CkanApiException(Exception):
         self.response = response
 
 
+class CkanApiFailureException(CkanApiException):
+    '''
+    CKAN API reported success: false. It should be okay to continue using the API.
+    '''
+    pass
+
+
+class CkanApiStatusException(CkanApiException):
+    '''
+    CKAN API returned an unhealthy status code. This indicates something might
+    not be working correctly with our configuration or the server could be
+    having issues and we should not continue using the API in this state.
+    '''
+    pass
+
+
 class DryRunException(Exception):
+    '''
+    Something happened during a dry-run execution that shouldn't have, like
+    trying to write to the API.
+    '''
     pass
 
 
@@ -39,9 +59,13 @@ class CkanApiClient(object):
         kwargs.setdefault('timeout', 60)
 
         response = self.client.request(method, url, **kwargs)
+        if response.status_code >= 400:
+            log.error('Unsuccessful status code status=%d body=%s', response.status_code, response.content)
+            raise CkanApiStatusException('Unsuccessful status code %d' % response.status_code, response)
 
-        assert response.status_code == 200
-        assert response.json()['success']
+        if not response.json().get('success', False):
+            log.error('API failure status=%d body=%s', response.status_code, response.content)
+            raise CkanApiFailureException('API reported failure', response)
 
         return response
 
@@ -107,7 +131,7 @@ class CkanApiClient(object):
             log.info('Not removing package in dry_run package=%s', package_id)
             return
 
-        self.request('POST', '/action/package_delete', params={
+        self.request('POST', '/action/package_delete', json={
             'id': package_id,
         })
 
