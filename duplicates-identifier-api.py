@@ -52,13 +52,8 @@ def run():
 
     # Loop over the organizations one at a time
     for organization in org_list:
-        try:
-            deduper = Deduper(organization, ckan_api, removed_package_log)
-            deduper.dedupe()
-        except Exception as e:
-            log.exception(e)
-            # Continue with the next organization
-            continue
+        deduper = Deduper(organization, ckan_api, removed_package_log)
+        deduper.dedupe()
 
 
 if __name__ == "__main__":

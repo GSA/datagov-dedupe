@@ -5,7 +5,7 @@ most recent duplicate and removes the rest.
 
 import logging
 
-from .ckan_api import CkanApiException
+from .ckan_api import CkanApiFailureException
 
 module_log = logging.getLogger(__name__)
 
@@ -26,14 +26,21 @@ class Deduper(object):
     def dedupe(self):
         # get list of harvesters for the organization
         self.log.debug('Fetching harvesters')
-        harvester_identifiers = self.ckan_api.get_harvester_identifiers(self.organization_name)
+        try:
+            harvester_identifiers = self.ckan_api.get_harvester_identifiers(self.organization_name)
+        except CkanApiFailureException, e:
+            self.log.error('Failed to fetch harvest identifiers for organization')
+            self.log.exception(e)
+            # continue onto the next organization
+            return
+
         self.log.info('Found harvest identifiers count=%d', len(harvester_identifiers))
 
         duplicate_count = 0
         for identifier in harvester_identifiers:
             try:
                 duplicate_count += self.dedupe_harvest_identifier(identifier['name'])
-            except CkanApiException, e:
+            except CkanApiFailureException, e:
                 self.log.error('Failed to dedupe harvest identifier=%s', identifier['name'])
                 continue
 
@@ -124,7 +131,7 @@ class Deduper(object):
             duplicate_count += 1
             try:
                 self.remove_package(dataset)
-            except CkanApiException, e:
+            except CkanApiFailureException, e:
                 log.error('Failed to remove dataset status_code=%s package=%r', e.response.status_code, (dataset['id'], dataset['name']))
                 continue
 
