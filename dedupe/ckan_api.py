@@ -131,7 +131,7 @@ class CkanApiClient(object):
             log.info('Not removing package in dry_run package=%s', package_id)
             return
 
-        self.request('POST', '/action/package_delete', params={
+        self.request('POST', '/action/package_delete', json={
             'id': package_id,
         })
 
