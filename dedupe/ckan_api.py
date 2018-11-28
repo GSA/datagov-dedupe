@@ -60,9 +60,11 @@ class CkanApiClient(object):
 
         response = self.client.request(method, url, **kwargs)
         if response.status_code >= 400:
+            log.error('Unsuccessful status code status=%d body=%s', response.status_code, response.content)
             raise CkanApiStatusException('Unsuccessful status code %d' % response.status_code, response)
 
         if not response.json().get('success', False):
+            log.error('API failure status=%d body=%s', response.status_code, response.content)
             raise CkanApiFailureException('API reported failure', response)
 
         return response
