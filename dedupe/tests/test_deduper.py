@@ -4,12 +4,16 @@ import mock
 
 from ..ckan_api import CkanApiClient
 from ..deduper import Deduper
+from ..audit import DuplicatePackageLog, RemovedPackageLog
 
 
 class TestDeduper(unittest.TestCase):
     def setUp(self):
+        self.duplicate_package_log = mock.Mock(DuplicatePackageLog)
+        self.removed_package_log = mock.Mock(RemovedPackageLog)
+
         self.ckan_api = mock.Mock(CkanApiClient)
-        self.deduper = Deduper('test-org', self.ckan_api)
+        self.deduper = Deduper('test-org', self.ckan_api, removed_package_log=self.removed_package_log, duplicate_package_log=self.duplicate_package_log)
 
     def test_replace_dataset(self):
         harvest_identifier = 'harvest-123'
@@ -28,3 +32,13 @@ class TestDeduper(unittest.TestCase):
         ]
 
         assert self.ckan_api.update_package.mock_calls == expected_update_package_calls
+
+
+    def test_remove_duplicate(self):
+        duplicate = {'id': '123', 'name': 'duplicate-package'}
+        retained = {'id': '456', 'name': 'retained-package'}
+
+        self.deduper.remove_duplicate(duplicate, retained)
+
+        self.duplicate_package_log.add.assert_called_once_with(duplicate, retained)
+        self.removed_package_log.add.assert_called_once_with(duplicate)

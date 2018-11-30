@@ -17,11 +17,12 @@ class ContextLoggerAdapter(logging.LoggerAdapter):
 
 
 class Deduper(object):
-    def __init__(self, organization_name, ckan_api, removed_package_log=None):
+    def __init__(self, organization_name, ckan_api, removed_package_log=None, duplicate_package_log=None):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
         self.removed_package_log = removed_package_log
+        self.duplicate_package_log = duplicate_package_log
 
     def dedupe(self):
         # get list of harvesters for the organization
@@ -78,12 +79,15 @@ class Deduper(object):
 
         return newest_dataset
 
-    def remove_package(self, package):
-        self.log.info('Removing duplicate package=%r', (package['id'], package['name']))
+    def remove_duplicate(self, duplicate_package, retained_package):
+        self.log.info('Removing duplicate package=%r', (duplicate_package['id'], duplicate_package['name']))
         if self.removed_package_log:
-            self.removed_package_log.add(package)
+            self.removed_package_log.add(duplicate_package)
 
-        self.ckan_api.remove_package(package['id'])
+        if self.duplicate_package_log:
+            self.duplicate_package_log.add(duplicate_package, retained_package)
+
+        self.ckan_api.remove_package(duplicate_package['id'])
 
     def dedupe_harvest_identifier(self, identifier):
         '''
@@ -135,7 +139,7 @@ class Deduper(object):
 
             duplicate_count += 1
             try:
-                self.remove_package(dataset)
+                self.remove_duplicate(dataset, new_dataset)
             except CkanApiFailureException, e:
                 log.error('Failed to remove dataset status_code=%s package=%r', e.response.status_code, (dataset['id'], dataset['name']))
                 continue
