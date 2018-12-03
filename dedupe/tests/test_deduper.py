@@ -42,3 +42,4 @@ class TestDeduper(unittest.TestCase):
 
         self.duplicate_package_log.add.assert_called_once_with(duplicate, retained)
         self.removed_package_log.add.assert_called_once_with(duplicate)
+        self.ckan_api.remove_package.assert_called_once_with(duplicate['id'])
