@@ -1,6 +1,6 @@
 
 import codecs
-import csv
+import unicodecsv as csv
 from datetime import datetime
 import json
 import logging
@@ -52,7 +52,8 @@ class DuplicatePackageLog(object):
             filename = 'duplicate-packages-%s.csv' % datetime.now().strftime('%Y%m%d%H%M%S')
 
         log.info('Opening duplicate package report for writing filename=%s', filename)
-        self.log = csv.DictWriter(codecs.open(filename, mode='w', encoding='utf8'), DuplicatePackageLog.fieldnames)
+        self.log = csv.DictWriter(open(filename, mode='wb'),
+                                  encoding='utf-8', fieldnames=DuplicatePackageLog.fieldnames)
         self.log.writeheader()
 
 
