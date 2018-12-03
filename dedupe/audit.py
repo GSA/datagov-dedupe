@@ -8,6 +8,16 @@ import os
 
 log = logging.getLogger(__name__)
 
+def get_extra(package, key, default=None):
+    '''
+    Returns the value of the named key from the extras list.
+    '''
+
+    try:
+        return next(extra['value'] for extra in package['extras'] if extra['key'] == key)
+    except StopIteration:
+        return default
+
 
 class RemovedPackageLog(object):
     def __init__(self, filename=None):
@@ -45,6 +55,7 @@ class DuplicatePackageLog(object):
         self.log = csv.DictWriter(codecs.open(filename, mode='w', encoding='utf8'), DuplicatePackageLog.fieldnames)
         self.log.writeheader()
 
+
     def add(self, duplicate_package, retained_package):
         log.debug('Recording duplicate package to report package=%s', duplicate_package['id'])
         self.log.writerow({
@@ -53,8 +64,8 @@ class DuplicatePackageLog(object):
             'name': duplicate_package['name'],
             'url': '%s/%s' % (self.api_url, duplicate_package['name']),
             'metadata_created': duplicate_package['metadata_created'],
-            'identifier': duplicate_package['extra']['identifier'],
-            'source_hash': duplicate_package['extra']['source_hash'],
+            'identifier': get_extra(duplicate_package, 'identifier'),
+            'source_hash': get_extra(duplicate_package, 'source_hash'),
             'retained_id': retained_package['id'],
             'retained_url': '%s/%s' % (self.api_url, retained_package['name']),
         })
