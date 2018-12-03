@@ -3,6 +3,7 @@ Duper looks for duplicate packages within a single organization, updates the
 most recent duplicate and removes the rest.
 '''
 
+import itertools
 import logging
 
 from .ckan_api import CkanApiFailureException
@@ -38,7 +39,10 @@ class Deduper(object):
         self.log.info('Found harvest identifiers count=%d', len(harvester_identifiers))
 
         duplicate_count = 0
+        count = itertools.count(start=1)
         for identifier in harvester_identifiers:
+            self.log.info('Deduplicating identifier=%s progress=%r',
+                          identifier, (next(count), len(harvester_identifiers)))
             try:
                 duplicate_count += self.dedupe_harvest_identifier(identifier['name'])
             except CkanApiFailureException, e:

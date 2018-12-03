@@ -1,5 +1,6 @@
 
 import argparse
+import itertools
 import logging
 import logging.config
 import os
@@ -52,7 +53,10 @@ def run():
     log.info('Deduplicating organizations=%d', len(org_list))
 
     # Loop over the organizations one at a time
+    count = itertools.count(start=1)
     for organization in org_list:
+        log.info('Deduplicating organization=%s progress=%r',
+                 organization, (next(count), len(org_list)))
         deduper = Deduper(organization, ckan_api, removed_package_log, duplicate_package_log)
         deduper.dedupe()
 
