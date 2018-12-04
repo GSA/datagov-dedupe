@@ -1,11 +1,18 @@
 
 import logging
+import ssl
 
 import requests
 
 log = logging.getLogger(__name__)
 
 READ_ONLY_METHODS = ['GET']
+
+defaultSslContext = ssl.create_default_context()
+defaultSslContext.options |= ssl.OP_NO_SSLv3
+defaultSslContext.options |= ssl.OP_NO_TLSv1
+
+log.debug(defaultSslContext.options)
 
 
 class CkanApiException(Exception):
