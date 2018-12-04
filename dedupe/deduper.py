@@ -46,7 +46,7 @@ class Deduper(object):
                 break
 
             self.log.info('Deduplicating identifier=%s progress=%r',
-                          identifier, (next(count), len(harvester_identifiers)))
+                          identifier['name'], (next(count), len(harvester_identifiers)))
             try:
                 duplicate_count += self.dedupe_harvest_identifier(identifier['name'])
             except CkanApiFailureException, e:
