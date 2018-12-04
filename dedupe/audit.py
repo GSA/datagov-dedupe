@@ -38,13 +38,14 @@ class RemovedPackageLog(object):
 
 class DuplicatePackageLog(object):
     fieldnames = [
-        'id',                   # Duplicate id (CKAN ID)
-        'title',                # Duplicate title (CKAN title)
-        'name',                 # Duplicate name (CKAN name)
-        'url',                  # Duplicate URL (site URL + CKAN name)
-        'metadata_created',     # Duplicate CKAN metadata_created from CKAN
-        'identifier',           # Duplicate POD metadata identifier (in CKAN extra)
-        'source_hash',          # Duplicate source_hash (in CKAN extra)
+        'organization',                   # Organization name
+        'duplicate_id',                   # Duplicate id (CKAN ID)
+        'duplicate_title',                # Duplicate title (CKAN title)
+        'duplicate_name',                 # Duplicate name (CKAN name)
+        'duplicate_url',                  # Duplicate URL (site URL + CKAN name)
+        'duplicate_metadata_created',     # Duplicate CKAN metadata_created from CKAN
+        'duplicate_identifier',           # Duplicate POD metadata identifier (in CKAN extra)
+        'duplicate_source_hash',          # Duplicate source_hash (in CKAN extra)
         'retained_id',          # Retained id (CKAN id)
         'retained_url',         # Retained URL (site URL + CKAN name)
     ]
@@ -65,15 +66,16 @@ class DuplicatePackageLog(object):
     def add(self, duplicate_package, retained_package):
         log.debug('Recording duplicate package to report package=%s', duplicate_package['id'])
         self.log.writerow({
-            'id': duplicate_package['id'],
-            'title': duplicate_package['title'],
-            'name': duplicate_package['name'],
-            'url': '%s/%s' % (self.api_url, duplicate_package['name']),
-            'metadata_created': duplicate_package['metadata_created'],
-            'identifier': get_extra(duplicate_package, 'identifier'),
-            'source_hash': get_extra(duplicate_package, 'source_hash'),
+            'organization': duplicate_package['organization']['name'],
+            'duplicate_id': duplicate_package['id'],
+            'duplicate_title': duplicate_package['title'],
+            'duplicate_name': duplicate_package['name'],
+            'duplicate_url': '%s/dataset/%s' % (self.api_url, duplicate_package['name']),
+            'duplicate_metadata_created': duplicate_package['metadata_created'],
+            'duplicate_identifier': get_extra(duplicate_package, 'identifier'),
+            'duplicate_source_hash': get_extra(duplicate_package, 'source_hash'),
             'retained_id': retained_package['id'],
-            'retained_url': '%s/%s' % (self.api_url, retained_package['name']),
+            'retained_url': '%s/dataset/%s' % (self.api_url, retained_package['name']),
         })
 
         # Persist the write to disk
