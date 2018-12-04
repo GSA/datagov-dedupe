@@ -56,7 +56,16 @@ class Deduper(object):
         self.log.info('Summary duplicate_count=%d', duplicate_count)
 
     def replace_oldest_dataset_with_newest(self, harvest_identifier):
-        self.log.debug('Fetching oldest and most recent pacakges for harvest identifier=%s', harvest_identifier)
+        '''
+        Fetches the oldest and most recent datasets for this harvest
+        identifier. We're going to retain the most recent (newest) and remove
+        the others. However, we want to keep the original name which is going
+        to be from the oldest dataset. We have to rename the oldest to avoid a
+        validation error. So, we grab the orignal name from the oldest, then
+        rename the oldest to a new name with the -dedupe-purge suffix. Then we
+        update the most recent package with the original name.
+        '''
+        self.log.debug('Fetching oldest and most recent dataset for harvest identifier=%s', harvest_identifier)
         oldest_dataset = self.ckan_api.get_oldest_dataset(harvest_identifier)
         newest_dataset = self.ckan_api.get_newest_dataset(harvest_identifier)
 
@@ -69,7 +78,7 @@ class Deduper(object):
         name = oldest_dataset['name']
 
         if name.endswith('-dedupe-purge'):
-            self.log.warning('Package already renamed, continuing without rename package=%r',
+            self.log.warning('Dataset already renamed, continuing without rename package=%r',
                              (oldest_dataset['id'], oldest_dataset['name']))
             return newest_dataset
 
@@ -85,7 +94,9 @@ class Deduper(object):
         newest_dataset['name'] = name
         self.ckan_api.update_package(newest_dataset)
 
+        # return the retained dataset (newest)
         return newest_dataset
+
 
     def remove_duplicate(self, duplicate_package, retained_package):
         self.log.info('Removing duplicate package=%r', (duplicate_package['id'], duplicate_package['name']))
@@ -118,7 +129,7 @@ class Deduper(object):
         # We want to keep the most recent dataset, but there is a name conflict
         # with the oldest dataset. Rename the oldest dataset so that we can
         # give it's name to the newest
-        new_dataset = self.replace_oldest_dataset_with_newest(identifier)
+        retained_dataset = self.replace_oldest_dataset_with_newest(identifier)
 
         # Fetch datasets in batches
         def get_datasets(total, rows=1000):
@@ -144,13 +155,13 @@ class Deduper(object):
                             dataset['organization']['name'], (dataset['id'], dataset['name']))
                 continue
 
-            if dataset['id'] == new_dataset['id']:
+            if dataset['id'] == retained_dataset['id']:
                 log.debug('This package is the most recent, not removing package=%s', dataset['id'])
                 continue
 
             duplicate_count += 1
             try:
-                self.remove_duplicate(dataset, new_dataset)
+                self.remove_duplicate(dataset, retained_dataset)
             except CkanApiFailureException, e:
                 log.error('Failed to remove dataset status_code=%s package=%r', e.response.status_code, (dataset['id'], dataset['name']))
                 continue
