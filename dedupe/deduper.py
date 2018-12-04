@@ -24,6 +24,7 @@ class Deduper(object):
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
         self.removed_package_log = removed_package_log
         self.duplicate_package_log = duplicate_package_log
+        self.stopped = False
 
     def dedupe(self):
         # get list of harvesters for the organization
@@ -41,6 +42,9 @@ class Deduper(object):
         duplicate_count = 0
         count = itertools.count(start=1)
         for identifier in harvester_identifiers:
+            if self.stopped:
+                break
+
             self.log.info('Deduplicating identifier=%s progress=%r',
                           identifier, (next(count), len(harvester_identifiers)))
             try:
@@ -132,6 +136,9 @@ class Deduper(object):
         # Now we can collect the datasets for removal
         duplicate_count = 0
         for dataset in get_datasets(harvest_data_count):
+            if self.stopped:
+                break
+
             if dataset['organization']['name'] != self.organization_name:
                 log.warning('Dataset harvested by organization but not part of organization pkg_org_name=%s package=%r',
                             dataset['organization']['name'], (dataset['id'], dataset['name']))
@@ -150,3 +157,10 @@ class Deduper(object):
 
 
         return duplicate_count
+
+
+    def stop(self):
+        '''
+        Tells the Deduper to stop processing anymore records.
+        '''
+        self.stopped = True

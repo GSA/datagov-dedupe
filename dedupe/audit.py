@@ -31,6 +31,10 @@ class RemovedPackageLog(object):
         log.debug('Saving package to removed package log package=%s', package['id'])
         self.log.write(json.dumps(package) + '\n')
 
+        # Persist the write to disk
+        self.log.flush()
+        os.fsync(self.log.fileno())
+
 
 class DuplicatePackageLog(object):
     fieldnames = [
@@ -52,7 +56,8 @@ class DuplicatePackageLog(object):
             filename = 'duplicate-packages-%s.csv' % datetime.now().strftime('%Y%m%d%H%M%S')
 
         log.info('Opening duplicate package report for writing filename=%s', filename)
-        self.log = csv.DictWriter(open(filename, mode='wb'),
+        self.__f = open(filename, mode='wb')
+        self.log = csv.DictWriter(self.__f,
                                   encoding='utf-8', fieldnames=DuplicatePackageLog.fieldnames)
         self.log.writeheader()
 
@@ -70,3 +75,7 @@ class DuplicatePackageLog(object):
             'retained_id': retained_package['id'],
             'retained_url': '%s/%s' % (self.api_url, retained_package['name']),
         })
+
+        # Persist the write to disk
+        self.__f.flush()
+        os.fsync(self.__f.fileno())

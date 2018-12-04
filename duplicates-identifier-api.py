@@ -4,6 +4,7 @@ import itertools
 import logging
 import logging.config
 import os
+import signal
 import time
 
 from dedupe.audit import DuplicatePackageLog, RemovedPackageLog
@@ -12,6 +13,10 @@ from dedupe.deduper import Deduper
 
 logging.config.fileConfig('logging.ini')
 log = logging.getLogger('dedupe')
+
+# Define module-level context for signal handling
+stopped = False
+deduper = None
 
 
 def get_org_list(ckan):
@@ -22,10 +27,19 @@ def get_org_list(ckan):
     return organizations_list
 
 
+def cleanup(signum, frame):
+    global deduper, stopped
+    log.warning('Stopping any in-progress dedupers...')
+    stopped = True
+    deduper.stop()
+
+
 def run():
     '''
         This code for getting the list of organizations and duplicate duplicate data sets
     '''
+    global deduper, stopped
+
     parser = argparse.ArgumentParser(description='Removes duplicate packages on data.gov.')
     parser.add_argument('--api-key', default=os.getenv('CKAN_API_KEY', None), help='Admin API key')
     parser.add_argument('--api-url', default='https://admin-catalog.data.gov',
@@ -41,6 +55,10 @@ def run():
     duplicate_package_log = DuplicatePackageLog(api_url=args.api_url)
     removed_package_log = RemovedPackageLog()
 
+    # Setup signal handlers
+    signal.signal(signal.SIGTERM, cleanup)
+    signal.signal(signal.SIGINT, cleanup)
+
     if args.dry_run:
         log.info('Dry run enabled')
 
@@ -55,6 +73,9 @@ def run():
     # Loop over the organizations one at a time
     count = itertools.count(start=1)
     for organization in org_list:
+        if stopped:
+            break
+
         log.info('Deduplicating organization=%s progress=%r',
                  organization, (next(count), len(org_list)))
         deduper = Deduper(organization, ckan_api, removed_package_log, duplicate_package_log)
