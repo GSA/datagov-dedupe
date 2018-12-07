@@ -78,7 +78,7 @@ class CkanApiClient(object):
         response = self.get('/action/package_search', params={
             'q': 'identifier:"%s"' % harvest_identifier,
             'fq': 'type:dataset',
-            'sort': 'metadata_created desc',
+            'sort': 'metadata_created asc',
             'rows': 1,
             })
 
@@ -88,7 +88,7 @@ class CkanApiClient(object):
         response = self.get('/action/package_search', params={
             'q': 'identifier:"%s"' % harvest_identifier,
             'fq': 'type:dataset',
-            'sort': 'metadata_created asc',
+            'sort': 'metadata_created desc',
             'rows': 1,
             })
 
