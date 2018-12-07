@@ -1,3 +1,4 @@
 *.pyc
 *.egg-info
+duplicate-packages-*.csv
 removed-packages-*.log
