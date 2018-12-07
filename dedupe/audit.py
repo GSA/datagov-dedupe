@@ -43,6 +43,7 @@ class DuplicatePackageLog(object):
         'retained_id',          # Retained id (CKAN id)
         'retained_url',         # Retained URL (site URL + CKAN name)
         'retained_metadata_created',      # Retained metadata_created
+        'retained_new_name',              # New name of the retained dataset once the rename is applied
     ]
 
     def __init__(self, filename=None, api_url=None, run_id=None):
@@ -75,6 +76,7 @@ class DuplicatePackageLog(object):
             'retained_id': retained_package['id'],
             'retained_url': '%s/dataset/%s' % (self.api_url, retained_package['name']),
             'retained_metadata_created': retained_package['metadata_created'],
+            'retained_new_name': util.get_package_extra(retained_package, 'datagov_dedupe')['rename_to'],
         })
 
         # Persist the write to disk
