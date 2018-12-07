@@ -7,6 +7,7 @@ import itertools
 import logging
 
 from .ckan_api import CkanApiFailureException
+from . import util
 
 module_log = logging.getLogger(__name__)
 

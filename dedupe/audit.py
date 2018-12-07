@@ -6,18 +6,9 @@ import json
 import logging
 import os
 
+from . import util
+
 log = logging.getLogger(__name__)
-
-def get_extra(package, key, default=None):
-    '''
-    Returns the value of the named key from the extras list.
-    '''
-
-    try:
-        return next(extra['value'] for extra in package['extras'] if extra['key'] == key)
-    except StopIteration:
-        return default
-
 
 class RemovedPackageLog(object):
     def __init__(self, filename=None):
@@ -72,8 +63,8 @@ class DuplicatePackageLog(object):
             'duplicate_name': duplicate_package['name'],
             'duplicate_url': '%s/dataset/%s' % (self.api_url, duplicate_package['name']),
             'duplicate_metadata_created': duplicate_package['metadata_created'],
-            'duplicate_identifier': get_extra(duplicate_package, 'identifier'),
-            'duplicate_source_hash': get_extra(duplicate_package, 'source_hash'),
+            'duplicate_identifier': util.get_package_extra(duplicate_package, 'identifier'),
+            'duplicate_source_hash': util.get_package_extra(duplicate_package, 'source_hash'),
             'retained_id': retained_package['id'],
             'retained_url': '%s/dataset/%s' % (self.api_url, retained_package['name']),
         })
