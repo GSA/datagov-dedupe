@@ -11,9 +11,12 @@ from . import util
 log = logging.getLogger(__name__)
 
 class RemovedPackageLog(object):
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, run_id=None):
+        if not run_id:
+            run_id = datetime.now().strftime('%Y%m%d%H%M%S')
+
         if not filename:
-            filename = 'removed-packages-%s.log' % datetime.now().strftime('%Y%m%d%H%M%S')
+            filename = 'removed-packages-%s.log' % run_id
 
         log.info('Opening removed packages log for writing filename=%s', filename)
         self.log = codecs.open(filename, mode='w', encoding='utf8')
@@ -41,11 +44,14 @@ class DuplicatePackageLog(object):
         'retained_url',         # Retained URL (site URL + CKAN name)
     ]
 
-    def __init__(self, filename=None, api_url=None):
+    def __init__(self, filename=None, api_url=None, run_id=None):
         self.api_url = api_url
 
+        if not run_id:
+            run_id = datetime.now().strftime('%Y%m%d%H%M%S')
+
         if not filename:
-            filename = 'duplicate-packages-%s.csv' % datetime.now().strftime('%Y%m%d%H%M%S')
+            filename = 'duplicate-packages-%s.csv' % run_id
 
         log.info('Opening duplicate package report for writing filename=%s', filename)
         self.__f = open(filename, mode='wb')

@@ -69,7 +69,8 @@ class TestDeduper(unittest.TestCase):
         self.deduper.commit_retained_package(retained)
 
         extra_keys = [extra['key'] for extra in retained['extras']]
-        assert 'datagov_dedupe' not in extra_keys, \
-            'Expected datagov_dedupe extra to be removed from package'
+        self.assertNotIn('datagov_dedupe', extra_keys,
+                         'Expected datagov_dedupe extra to be removed from package')
+        self.assertIn('datagov_dedupe_retained', extra_keys)
         self.assertEqual(retained['name'], 'original-package', 'Expected package to be renamed to rename_to')
         self.ckan_api.update_package.assert_called_once_with(retained)

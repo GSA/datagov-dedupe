@@ -3,6 +3,7 @@ Duper looks for duplicate packages within a single organization, updates the
 most recent duplicate and removes the rest.
 '''
 
+from datetime import datetime
 import itertools
 import logging
 
@@ -21,13 +22,18 @@ class ContextLoggerAdapter(logging.LoggerAdapter):
 
 
 class Deduper(object):
-    def __init__(self, organization_name, ckan_api, removed_package_log=None, duplicate_package_log=None):
+    def __init__(self, organization_name, ckan_api, removed_package_log=None, duplicate_package_log=None, run_id=None):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
         self.removed_package_log = removed_package_log
         self.duplicate_package_log = duplicate_package_log
         self.stopped = False
+
+        if not run_id:
+            run_id = datetime.now().strftime('%Y%m%d%H%M%S')
+
+        self.run_id = run_id
 
     def dedupe(self):
         # get list of harvesters for the organization
@@ -122,8 +128,9 @@ class Deduper(object):
         name = util.get_package_extra(retained_package, 'datagov_dedupe')['rename_to']
         retained_package['name'] = name
 
-        # Unmark the retained package
+        # Mark the retained package
         util.set_package_extra(retained_package, 'datagov_dedupe', None)
+        util.set_package_extra(retained_package, 'datagov_dedupe_retained', self.run_id)
 
         self.log.debug('Commit retained package in API package=%r',
                        (retained_package['id'], retained_package['name']))
@@ -170,21 +177,20 @@ class Deduper(object):
             log.debug('No duplicates found for harvest identifier.')
             return 0
 
-        # We want to keep the most recent dataset, but there is a name conflict
-        # with the oldest dataset. Rename the oldest dataset so that we can
-        # give it's name to the newest
+        # We want to keep the most recent dataset
         self.log.debug('Fetching most recent dataset for harvest identifier=%s', identifier)
         retained_dataset = self.ckan_api.get_newest_dataset(identifier)
 
         # Check if the dedupe process has been started on this package
         if not util.get_package_extra(retained_dataset, 'datagov_dedupe'):
-            # Make the package with its to-be new name
-            # We don't rename it yet, because our logs become confusing.
-            # Instead, we rename at the end after the logs have been written
-            # and all the duplicates removed. We have to record the name now
-            # because the oldest package could be removed. If the oldest
-            # package is removed and then we're interrupted, we won't know what
-            # the reall oldest pacakge was.
+            # We mark the retained package as having started the dedupe
+            # process. This helps us record information like the original
+            # package name so that in case we are interrupted, we can pick up
+            # where we left off.
+            #
+            # If we're interrupted, it's possible the original dataset would've
+            # been removed, so we need to make sure we collect all information
+            # we need for the final retained update now.
             self.mark_retained_package(retained_dataset)
 
         # Fetch datasets in batches
@@ -207,6 +213,7 @@ class Deduper(object):
         duplicate_count = 0
         for dataset in get_datasets(harvest_data_count):
             if self.stopped:
+                self.log.debug('Deduper is stopped, cleaning up...')
                 break
 
             if dataset['organization']['name'] != self.organization_name:

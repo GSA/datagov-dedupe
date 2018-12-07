@@ -1,5 +1,6 @@
 
 import argparse
+from datetime import datetime
 import itertools
 import logging
 import logging.config
@@ -46,14 +47,17 @@ def run():
                         help='The API base URL to query')
     parser.add_argument('--dry-run', action='store_true',
                         help='Treat the API as read-only and make no changes.')
+    parser.add_argument('--run-id', default=datetime.now().strftime('%Y%m%d%H%M%S'),
+                        help='An identifier for a single run of the deduplication script.')
     parser.add_argument('organization_name', nargs='*',
                         help='Names of the organizations to deduplicate.')
 
     args = parser.parse_args()
 
+    log.info('run_id=%s', args.run_id)
     ckan_api = CkanApiClient(args.api_url, args.api_key, dry_run=args.dry_run)
-    duplicate_package_log = DuplicatePackageLog(api_url=args.api_url)
-    removed_package_log = RemovedPackageLog()
+    duplicate_package_log = DuplicatePackageLog(api_url=args.api_url, run_id=args.run_id)
+    removed_package_log = RemovedPackageLog(run_id=args.run_id)
 
     # Setup signal handlers
     signal.signal(signal.SIGTERM, cleanup)
@@ -78,7 +82,12 @@ def run():
 
         log.info('Deduplicating organization=%s progress=%r',
                  organization, (next(count), len(org_list)))
-        deduper = Deduper(organization, ckan_api, removed_package_log, duplicate_package_log)
+        deduper = Deduper(
+            organization,
+            ckan_api,
+            removed_package_log,
+            duplicate_package_log,
+            run_id=args.run_id)
         deduper.dedupe()
 
 
