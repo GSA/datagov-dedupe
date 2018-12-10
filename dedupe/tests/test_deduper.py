@@ -29,13 +29,6 @@ class TestDeduper(unittest.TestCase):
 
     def test_mark_retained_package(self):
         identifier = 'harvest-identifier-1'
-        original = {
-            'id': '123',
-            'name': 'original-package',
-            'extras': [
-                {'key': 'identifier', 'value': identifier},
-            ],
-        }
         retained = {
             'id': '456',
             'name': 'retained-package',
@@ -43,18 +36,15 @@ class TestDeduper(unittest.TestCase):
                 {'key': 'identifier', 'value': identifier},
             ],
         }
-        self.ckan_api.get_oldest_dataset.return_value = original
-
         self.deduper.mark_retained_package(retained)
 
-        self.ckan_api.get_oldest_dataset.assert_called_once_with(identifier)
+        self.ckan_api.update_package.assert_called_once_with(retained)
 
+        # Package should be recorded with the current run id
         extra_keys = [extra['key'] for extra in retained['extras']]
         assert 'datagov_dedupe' in extra_keys
-
         datagov_dedupe = util.get_package_extra(retained, 'datagov_dedupe')
-        assert 'rename_to' in datagov_dedupe
-        self.assertEqual(datagov_dedupe['rename_to'], 'original-package')
+        self.assertEqual(datagov_dedupe, self.deduper.run_id)
 
     def test_commit_retained_package(self):
         retained = {
@@ -72,5 +62,4 @@ class TestDeduper(unittest.TestCase):
         self.assertNotIn('datagov_dedupe', extra_keys,
                          'Expected datagov_dedupe extra to be removed from package')
         self.assertIn('datagov_dedupe_retained', extra_keys)
-        self.assertEqual(retained['name'], 'original-package', 'Expected package to be renamed to rename_to')
         self.ckan_api.update_package.assert_called_once_with(retained)
