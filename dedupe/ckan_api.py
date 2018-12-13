@@ -97,6 +97,7 @@ class CkanApiClient(object):
     def get_harvester_identifiers(self, organization_name):
         response = self.get('/3/action/package_search', params={
             'q': 'organization:"%s" AND state:"active"' % organization_name,
+            'fq': 'type:dataset',
             'facet.field': '["identifier"]',
             'facet.limit': -1,
             'facet.mincount': 2,
@@ -119,6 +120,7 @@ class CkanApiClient(object):
     def get_datasets(self, organization_name, harvest_identifier, start=0, rows=1000):
         response = self.get('/action/package_search', params={
             'q': 'identifier:"%s" AND state:"active"' % harvest_identifier,
+            'fq': 'type:dataset',
             'start': start,
             'rows': rows,
             })
