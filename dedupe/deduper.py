@@ -1,6 +1,6 @@
 '''
 Duper looks for duplicate packages within a single organization, updates the
-most recent duplicate and removes the rest.
+retained package and removes the rest.
 '''
 
 from datetime import datetime
@@ -144,7 +144,7 @@ class Deduper(object):
             return 0
 
         # We want to keep the oldest dataset
-        self.log.debug('Fetching most recent dataset for harvest identifier=%s', identifier)
+        self.log.debug('Fetching oldest dataset for harvest identifier=%s', identifier)
         retained_dataset = self.ckan_api.get_oldest_dataset(identifier)
 
         # Check if the dedupe process has been started on this package
@@ -191,7 +191,7 @@ class Deduper(object):
                 continue
 
             if dataset['id'] == retained_dataset['id']:
-                log.debug('This package is the most recent, not removing package=%s', dataset['id'])
+                log.debug('This package is the retained dataset, not removing package=%s', dataset['id'])
                 continue
 
             duplicate_count += 1
