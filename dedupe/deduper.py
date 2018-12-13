@@ -170,8 +170,11 @@ class Deduper(object):
                     'Batch fetching datasets for harvest offset=%d rows=%d total=%d',
                     start, rows, total)
                 datasets = self.ckan_api.get_datasets(self.organization_name, identifier, start, rows)
-                start += len(datasets)
+                if len(datasets) < 1:
+                    log.warning('Got zero datasets from API offset=%d total=%d', start, total)
+                    raise StopIteration
 
+                start += len(datasets)
                 for dataset in datasets:
                     yield dataset
 
