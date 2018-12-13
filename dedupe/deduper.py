@@ -52,7 +52,7 @@ class Deduper(object):
         count = itertools.count(start=1)
         for identifier in harvester_identifiers:
             if self.stopped:
-                break
+                return
 
             self.log.info('Deduplicating identifier=%s progress=%r',
                           identifier['name'], (next(count), len(harvester_identifiers)))
@@ -183,7 +183,7 @@ class Deduper(object):
         for dataset in get_datasets(harvest_data_count):
             if self.stopped:
                 self.log.debug('Deduper is stopped, cleaning up...')
-                break
+                return duplicate_count
 
             if dataset['organization']['name'] != self.organization_name:
                 log.warning('Dataset harvested by organization but not part of organization pkg_org_name=%s package=%r',
