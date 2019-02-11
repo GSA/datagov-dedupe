@@ -31,6 +31,7 @@ class RemovedPackageLog(object):
 
 
 class DuplicatePackageLog(object):
+    # Order matters here for the report
     fieldnames = [
         'organization',                   # Organization name
         'duplicate_id',                   # Duplicate id (CKAN ID)
@@ -43,7 +44,6 @@ class DuplicatePackageLog(object):
         'retained_id',          # Retained id (CKAN id)
         'retained_url',         # Retained URL (site URL + CKAN name)
         'retained_metadata_created',      # Retained metadata_created
-        'retained_new_name',              # New name of the retained dataset once the rename is applied
     ]
 
     def __init__(self, filename=None, api_url=None, run_id=None):
@@ -65,18 +65,17 @@ class DuplicatePackageLog(object):
     def add(self, duplicate_package, retained_package):
         log.debug('Recording duplicate package to report package=%s', duplicate_package['id'])
         self.log.writerow({
-            'organization': duplicate_package['organization']['name'],
             'duplicate_id': duplicate_package['id'],
-            'duplicate_title': duplicate_package['title'],
-            'duplicate_name': duplicate_package['name'],
-            'duplicate_url': '%s/dataset/%s' % (self.api_url, duplicate_package['name']),
-            'duplicate_metadata_created': duplicate_package['metadata_created'],
             'duplicate_identifier': util.get_package_extra(duplicate_package, 'identifier'),
+            'duplicate_metadata_created': duplicate_package['metadata_created'],
+            'duplicate_name': duplicate_package['name'],
             'duplicate_source_hash': util.get_package_extra(duplicate_package, 'source_hash'),
+            'duplicate_title': duplicate_package['title'],
+            'duplicate_url': '%s/dataset/%s' % (self.api_url, duplicate_package['name']),
+            'organization': duplicate_package['organization']['name'],
             'retained_id': retained_package['id'],
-            'retained_url': '%s/dataset/%s' % (self.api_url, retained_package['name']),
             'retained_metadata_created': retained_package['metadata_created'],
-            'retained_new_name': util.get_package_extra(retained_package, 'datagov_dedupe')['rename_to'],
+            'retained_url': '%s/dataset/%s' % (self.api_url, retained_package['name']),
         })
 
         # Persist the write to disk
