@@ -63,6 +63,8 @@ def run():
     signal.signal(signal.SIGTERM, cleanup)
     signal.signal(signal.SIGINT, cleanup)
 
+    log.info('Using api=%s', args.api_url)
+
     if args.dry_run:
         log.info('Dry run enabled')
 
