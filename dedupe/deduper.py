@@ -7,7 +7,7 @@ from datetime import datetime
 import itertools
 import logging
 
-from .ckan_api import CkanApiFailureException
+from .ckan_api import CkanApiFailureException, CkanApiCountException
 from . import util
 
 module_log = logging.getLogger(__name__)
@@ -60,6 +60,9 @@ class Deduper(object):
                 duplicate_count += self.dedupe_harvest_identifier(identifier['name'])
             except CkanApiFailureException, e:
                 self.log.error('Failed to dedupe harvest identifier=%s', identifier['name'])
+                continue
+            except CkanApiCountException, e:
+                self.log.error('Got an invalid count, this may not be a duplicate identifier=%s', identifier['name'])
                 continue
 
         self.log.info('Summary duplicate_count=%d', duplicate_count)

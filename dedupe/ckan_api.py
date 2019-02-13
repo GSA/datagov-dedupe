@@ -16,7 +16,7 @@ class CkanApiException(Exception):
 
 class CkanApiFailureException(CkanApiException):
     '''
-    CKAN API reported success: false. It should be okay to continue using the API.
+    CKAN API reported {success: false}. It should be okay to continue using the API.
     '''
     pass
 
@@ -26,6 +26,13 @@ class CkanApiStatusException(CkanApiException):
     CKAN API returned an unhealthy status code. This indicates something might
     not be working correctly with our configuration or the server could be
     having issues and we should not continue using the API in this state.
+    '''
+    pass
+
+class CkanApiCountException(CkanApiException):
+    '''
+    CKAN API (and solr) returned a non-zero count, but no data. Could this be
+    solr index corruption?
     '''
     pass
 
@@ -75,24 +82,51 @@ class CkanApiClient(object):
         return self.request('GET', path, **kwargs)
 
     def get_oldest_dataset(self, harvest_identifier):
+        rows = 1
         response = self.get('/action/package_search', params={
             'q': 'identifier:"%s"' % harvest_identifier,
             'fq': 'type:dataset',
             'sort': 'metadata_created asc',
-            'rows': 1,
+            'rows': rows,
             })
 
-        return response.json()['result']['results'][0]
+        results = response.json()['result']['results']
+
+        if len(results) != rows:
+            count = response.json()['result']['count']
+            raise CkanApiCountException(
+                'Query reported non-zero count but no data '
+                'count=%(count)s results=%(results)s' % {
+                    'count': count,
+                    'results': len(results),
+                },
+                response)
+
+        return results[0]
 
     def get_newest_dataset(self, harvest_identifier):
+        rows = 1
         response = self.get('/action/package_search', params={
             'q': 'identifier:"%s"' % harvest_identifier,
             'fq': 'type:dataset',
             'sort': 'metadata_created desc',
-            'rows': 1,
+            'rows': rows,
             })
 
-        return response.json()['result']['results'][0]
+        results = response.json()['result']['results']
+
+        if len(results) != rows:
+            count = response.json()['result']['count']
+            raise CkanApiCountException(
+                'Query reported non-zero count but no data '
+                'count=%(count)s results=%(results)s' % {
+                    'count': count,
+                    'results': len(results),
+                },
+                response)
+
+        return results[0]
+
 
     def get_harvester_identifiers(self, organization_name):
         response = self.get('/3/action/package_search', params={
