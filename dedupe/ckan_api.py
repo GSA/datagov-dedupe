@@ -54,6 +54,8 @@ class CkanApiClient(object):
         self.api_url = api_url
         self.dry_run = dry_run
         self.client = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(max_retries=3)
+        self.client.mount('https://', adapter)
         self.client.headers.update(Authorization=api_key)
         # Set the auth_tkt cookie to talk to admin API
         self.client.cookies = requests.cookies.cookiejar_from_dict(dict(auth_tkt='1'))
