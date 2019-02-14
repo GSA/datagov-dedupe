@@ -36,17 +36,36 @@ class Deduper(object):
         self.run_id = run_id
 
     def dedupe(self):
-        # get list of harvesters for the organization
-        self.log.debug('Fetching harvesters')
+        self.log.debug('Fetching dataset identifiers with duplicates')
         try:
-            identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name)
-        except CkanApiFailureException, e:
-            self.log.error('Failed to fetch harvest identifiers for organization')
-            self.log.exception(e)
+            dataset_identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name)
+        except CkanApiFailureException, exc:
+            self.log.error('Failed to fetch dataset identifiers for organization')
+            self.log.exception(exc)
             # continue onto the next organization
             return
 
-        self.log.info('Found harvest identifiers count=%d', len(identifiers))
+        self.log.info('Found dataset identifiers with duplicates count=%d',
+                      len(dataset_identifiers))
+
+        self.log.debug('Fetching collection identifiers with duplicates')
+        try:
+            collection_identifiers = \
+                self.ckan_api.get_duplicate_collection_identifiers(self.organization_name)
+        except CkanApiFailureException, exc:
+            self.log.error('Failed to fetch collection identifiers for organization')
+            self.log.exception(exc)
+            # continue onto the next organization
+            return
+
+        self.log.info('Found collection identifiers with duplicates count=%d',
+                      len(collection_identifiers))
+
+        # For both collection and dataset identifiers, treat them the same and
+        # dedupe them together. Map them to the identifier name, since that's
+        # all we're interested in. We use a frozenset because we want unique
+        # identifiers and will treat it as immutable.
+        identifiers = frozenset(i['name'] for i in dataset_identifiers + collection_identifiers)
 
         duplicate_count = 0
         count = itertools.count(start=1)
@@ -55,21 +74,23 @@ class Deduper(object):
                 return
 
             self.log.info('Deduplicating identifier=%s progress=%r',
-                          identifier['name'], (next(count), len(identifiers)))
+                          identifier, (next(count), len(identifiers)))
             try:
-                duplicate_count += self.dedupe_identifier(identifier['name'])
-            except CkanApiFailureException, e:
-                self.log.error('Failed to dedupe harvest identifier=%s', identifier['name'])
+                duplicate_count += self.dedupe_identifier(identifier)
+            except CkanApiFailureException:
+                self.log.error('Failed to dedupe harvest identifier=%s', identifier)
                 continue
-            except CkanApiCountException, e:
-                self.log.error('Got an invalid count, this may not be a duplicate identifier=%s', identifier['name'])
+            except CkanApiCountException:
+                self.log.error('Got an invalid count, this may not be a duplicate or there could '
+                               'be index corruption identifier=%s', identifier)
                 continue
 
         self.log.info('Summary duplicate_count=%d', duplicate_count)
 
 
     def remove_duplicate(self, duplicate_package, retained_package):
-        self.log.info('Removing duplicate package=%r', (duplicate_package['id'], duplicate_package['name']))
+        self.log.info('Removing duplicate package=%r',
+                      (duplicate_package['id'], duplicate_package['name']))
         if self.removed_package_log:
             self.removed_package_log.add(duplicate_package)
 
