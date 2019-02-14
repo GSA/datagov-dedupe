@@ -14,6 +14,10 @@ module_log = logging.getLogger(__name__)
 
 PACKAGE_NAME_MAX_LENGTH = 100
 
+class DeduperStopException(Exception):
+    '''Raised when the deduper is asked to stop processing and gracefully exit.'''
+    pass
+
 
 class ContextLoggerAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
@@ -36,56 +40,90 @@ class Deduper(object):
         self.run_id = run_id
 
     def dedupe(self):
-        self.log.debug('Fetching dataset identifiers with duplicates')
-        try:
-            dataset_identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name)
-        except CkanApiFailureException, exc:
-            self.log.error('Failed to fetch dataset identifiers for organization')
-            self.log.exception(exc)
-            # continue onto the next organization
-            return
+        '''
+        The main dedupe process.
 
-        self.log.info('Found dataset identifiers with duplicates count=%d',
-                      len(dataset_identifiers))
+        Fetches dataset identifiers that match 2 or more packages, indicating a
+        duplicate. Then processes each identifier for removal of duplicates.
 
-        self.log.debug('Fetching collection identifiers with duplicates')
-        try:
-            collection_identifiers = \
-                self.ckan_api.get_duplicate_collection_identifiers(self.organization_name)
-        except CkanApiFailureException, exc:
-            self.log.error('Failed to fetch collection identifiers for organization')
-            self.log.exception(exc)
-            # continue onto the next organization
-            return
+        First, non-collection duplicate dataset identifiers are fetched and
+        deduplicated. Then collection duplicate dataset identifiers are fetched
+        and deduplicated. They are processed separately due to differences in
+        query parameters.
+        '''
 
-        self.log.info('Found collection identifiers with duplicates count=%d',
-                      len(collection_identifiers))
+        def _fetch_and_dedupe_identifiers(is_collection):
+            '''
+            Helper method to loop over identifiers and deduplicate them.
+            Returns the number of duplicate datasets.
+            '''
 
-        # For both collection and dataset identifiers, treat them the same and
-        # dedupe them together. Map them to the identifier name, since that's
-        # all we're interested in. We use a frozenset because we want unique
-        # identifiers and will treat it as immutable.
-        identifiers = frozenset(i['name'] for i in dataset_identifiers + collection_identifiers)
+            # Label the dataset as collection or non-collection, mostly for log output
+            label = 'collection' if is_collection else 'non-collection'
 
-        duplicate_count = 0
-        count = itertools.count(start=1)
-        for identifier in identifiers:
-            if self.stopped:
+            self.log.debug('Fetching %s dataset identifiers with duplicates', label)
+            try:
+                identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name,
+                                                                      is_collection)
+            except CkanApiFailureException, exc:
+                self.log.error('Failed to fetch %s dataset identifiers for organization', label)
+                self.log.exception(exc)
+                # continue onto the next organization
                 return
 
-            self.log.info('Deduplicating identifier=%s progress=%r',
-                          identifier, (next(count), len(identifiers)))
-            try:
-                duplicate_count += self.dedupe_identifier(identifier)
-            except CkanApiFailureException:
-                self.log.error('Failed to dedupe harvest identifier=%s', identifier)
-                continue
-            except CkanApiCountException:
-                self.log.error('Got an invalid count, this may not be a duplicate or there could '
-                               'be index corruption identifier=%s', identifier)
-                continue
+            self.log.info('Found %s dataset identifiers with duplicates count=%d',
+                          label,
+                          len(identifiers))
 
-        self.log.info('Summary duplicate_count=%d', duplicate_count)
+            duplicate_count = 0
+            count = itertools.count(start=1)
+            # Work with the identifer name, since that's all we need and it's a
+            # little cleaner.
+            for identifier in (i['name'] for i in identifiers):
+                if self.stopped:
+                    raise DeduperStopException()
+
+                self.log.info('Deduplicating identifier=%s progress=%r',
+                              identifier, (next(count), len(identifiers)))
+                try:
+                    duplicate_count += self.dedupe_identifier(identifier, is_collection)
+                except CkanApiFailureException:
+                    self.log.error('Failed to dedupe identifier=%s', identifier)
+                    # Move on to next identifier
+                    continue
+                except CkanApiCountException:
+                    self.log.error('Got an invalid count, this may not be a duplicate or there '
+                                   'could be inconsistencies between db and solr. Try running the '
+                                   'db_solr_sync job. identifier=%s', identifier)
+                    # Move on to next identifier
+                    continue
+
+            self.log.info('Removed duplicates for %s datasets duplicate_count=%d',
+                          label,
+                          duplicate_count)
+            return duplicate_count
+
+
+        # Total deduplicated datasets for both non-collection and collection datasets
+        total_duplicate_count = 0
+
+        # First, process non-collection datasets
+        try:
+            total_duplicate_count += _fetch_and_dedupe_identifiers(is_collection=False)
+        except DeduperStopException:
+            self.log.warning('Deduper is stopped, cleaning up...')
+            # Just return to end processing early and gracefully
+            return
+
+        # Process collection datasets
+        try:
+            total_duplicate_count += _fetch_and_dedupe_identifiers(is_collection=True)
+        except DeduperStopException:
+            self.log.warning('Deduper is stopped, cleaning up...')
+            # Just return to end processing early and gracefully
+            return
+
+        self.log.info('Summary duplicate_count=%d', total_duplicate_count)
 
 
     def remove_duplicate(self, duplicate_package, retained_package):
@@ -105,6 +143,10 @@ class Deduper(object):
         interrupted. This allows us to continue with removing duplicates when we resume.
 
         Note: we're currently not mutating the data in a way that wouldn't be idempotent.
+
+        Note: this isn't really necessary anymore because we're not doing a
+        rename which required us to gather the state up front in case we are
+        interrupted. We leave this here in case rename behavior needs to be re-added.
         '''
         self.log.info('Marking retained dataset for idempotency package=%r',
                       (retained_package['id'], retained_package['name']))
@@ -121,15 +163,17 @@ class Deduper(object):
         '''
         Unmarks the package for deduplication and commits any data changes.
         '''
-        # Mark the retained package
+        # Unmark the retained package
         util.set_package_extra(retained_package, 'datagov_dedupe', None)
+
+        # Add the run_id so there is some record we can look back on.
         util.set_package_extra(retained_package, 'datagov_dedupe_retained', self.run_id)
 
         self.log.debug('Commit retained package in API package=%r',
                        (retained_package['id'], retained_package['name']))
         self.ckan_api.update_package(retained_package)
 
-    def dedupe_identifier(self, identifier):
+    def dedupe_identifier(self, identifier, is_collection=False):
         '''
         Removes duplicate datasets for the given identifier. The
         deduper is meant to be idempotent so that if it is interrupted, it can
@@ -159,17 +203,17 @@ class Deduper(object):
             )
 
         log.debug('Fetching number of datasets for unique identifier')
-        dataset_count = self.ckan_api.get_dataset_count(self.organization_name, identifier)
+        dataset_count = self.ckan_api.get_dataset_count(self.organization_name, identifier, is_collection)
         log.info('Found packages count=%d', dataset_count)
 
         # If there is only one or less, there's no duplicates.
         if dataset_count <= 1:
-            log.debug('No duplicates found for harvest identifier.')
+            log.debug('No duplicates found for identifier.')
             return 0
 
         # We want to keep the oldest dataset
-        self.log.debug('Fetching oldest dataset for harvest identifier=%s', identifier)
-        retained_dataset = self.ckan_api.get_oldest_dataset(identifier)
+        self.log.debug('Fetching oldest dataset for identifier=%s', identifier)
+        retained_dataset = self.ckan_api.get_oldest_dataset(identifier, is_collection)
 
         # Check if the dedupe process has been started on this package
         if not util.get_package_extra(retained_dataset, 'datagov_dedupe'):
@@ -191,9 +235,9 @@ class Deduper(object):
             start = 0
             while start < total:
                 log.debug(
-                    'Batch fetching datasets for harvest offset=%d rows=%d total=%d',
+                    'Batch fetching datasets for identifier offset=%d rows=%d total=%d',
                     start, rows, total)
-                datasets = self.ckan_api.get_datasets(self.organization_name, identifier, start, rows)
+                datasets = self.ckan_api.get_datasets(self.organization_name, identifier, start, rows, is_collection)
                 if len(datasets) < 1:
                     log.warning('Got zero datasets from API offset=%d total=%d', start, total)
                     raise StopIteration
@@ -206,8 +250,7 @@ class Deduper(object):
         duplicate_count = 0
         for dataset in get_datasets(dataset_count):
             if self.stopped:
-                self.log.debug('Deduper is stopped, cleaning up...')
-                return duplicate_count
+                raise DeduperStopException()
 
             if dataset['organization']['name'] != self.organization_name:
                 log.warning('Dataset harvested by organization but not part of organization pkg_org_name=%s package=%r',
@@ -226,8 +269,8 @@ class Deduper(object):
                           e.response.status_code, (dataset['id'], dataset['name']))
                 continue
 
-        # Rename the retained package
-        self.log.info('Committing retained package rename package=%r',
+        # Commit the retained package
+        self.log.info('Committing retained package package=%r',
                       (retained_dataset['id'], retained_dataset['name']))
         self.commit_retained_package(retained_dataset)
 

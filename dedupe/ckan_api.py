@@ -83,11 +83,14 @@ class CkanApiClient(object):
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
 
-    def get_oldest_dataset(self, harvest_identifier):
+    def get_oldest_dataset(self, identifier, is_collection):
+        filter_query = 'identifier:"%s" AND type:dataset' % identifier
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
+
         rows = 1
         response = self.get('/action/package_search', params={
-            'q': 'identifier:"%s"' % harvest_identifier,
-            'fq': 'type:dataset',
+            'fq': filter_query,
             'sort': 'metadata_created asc',
             'rows': rows,
             })
@@ -106,33 +109,13 @@ class CkanApiClient(object):
 
         return results[0]
 
-    def get_newest_dataset(self, harvest_identifier):
-        rows = 1
-        response = self.get('/action/package_search', params={
-            'q': 'identifier:"%s"' % harvest_identifier,
-            'fq': 'type:dataset',
-            'sort': 'metadata_created desc',
-            'rows': rows,
-            })
+    def get_duplicate_identifiers(self, organization_name, is_collection):
+        filter_query = 'organization:"%s" AND type:dataset' % organization_name,
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
 
-        results = response.json()['result']['results']
-
-        if len(results) != rows:
-            count = response.json()['result']['count']
-            raise CkanApiCountException(
-                'Query reported non-zero count but no data '
-                'count=%(count)s results=%(results)s' % {
-                    'count': count,
-                    'results': len(results),
-                },
-                response)
-
-        return results[0]
-
-
-    def get_duplicate_identifiers(self, organization_name):
         response = self.get('/3/action/package_search', params={
-            'fq': 'organization:"%s" AND state:"active" AND type:dataset' % organization_name,
+            'fq': filter_query,
             'facet.field': '["identifier"]',
             'facet.limit': -1,
             'facet.mincount': 2,
@@ -141,30 +124,26 @@ class CkanApiClient(object):
 
         return response.json()['result']['search_facets']['identifier']['items']
 
-    def get_duplicate_collection_identifiers(self, organization_name):
-        response = self.get('/3/action/package_search', params={
-            'fq': 'organization:"%s" AND collection_package_id:*' % organization_name,
-            'facet.field': '["identifier"]',
-            'facet.limit': -1,
-            'facet.mincount': 2,
-            'rows': 0,
-            })
+    def get_dataset_count(self, organization_name, identifier, is_collection):
+        filter_query = 'identifier:"%s" AND type:dataset' % identifier,
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
 
-        return response.json()['result']['search_facets']['identifier']['items']
-
-    def get_dataset_count(self, organization_name, harvest_identifier):
         response = self.get('/action/package_search', params={
-            'fq': 'identifier:"%s" AND state:"active" AND type:dataset' % harvest_identifier,
+            'fq': filter_query,
             'sort': 'metadata_created desc',
             'rows': 0,
             })
 
         return response.json()['result']['count']
 
-    def get_datasets(self, organization_name, harvest_identifier, start=0, rows=1000):
+    def get_datasets(self, organization_name, identifier, start=0, rows=1000, is_collection=False):
+        filter_query = 'identifier:"%s" AND type:dataset' % identifier
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
+
         response = self.get('/action/package_search', params={
-            'q': 'identifier:"%s" AND state:"active"' % harvest_identifier,
-            'fq': 'type:dataset',
+            'fq': filter_query,
             'start': start,
             'rows': rows,
             })

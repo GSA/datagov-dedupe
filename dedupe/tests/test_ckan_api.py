@@ -47,17 +47,4 @@ class TestCkanApiClient(unittest.TestCase):
         with mock.patch.object(CkanApiClient, 'request', return_value=StubResponse(invalid_count_response)) as mock_request:
             api = CkanApiClient('http://test', 'api-key-abc')
             with self.assertRaises(CkanApiCountException):
-                api.get_oldest_dataset('package-123')
-
-    def test_get_newest_dataset_count_exception(self):
-        invalid_count_response = {
-            'result': {
-                'count': 2,
-                'results': []
-            },
-        }
-
-        with mock.patch.object(CkanApiClient, 'request', return_value=StubResponse(invalid_count_response)) as mock_request:
-            api = CkanApiClient('http://test', 'api-key-abc')
-            with self.assertRaises(CkanApiCountException):
-                api.get_newest_dataset('package-123')
+                api.get_oldest_dataset('package-123', is_collection=False)
