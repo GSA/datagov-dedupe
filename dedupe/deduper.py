@@ -39,25 +39,25 @@ class Deduper(object):
         # get list of harvesters for the organization
         self.log.debug('Fetching harvesters')
         try:
-            harvester_identifiers = self.ckan_api.get_harvester_identifiers(self.organization_name)
+            identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name)
         except CkanApiFailureException, e:
             self.log.error('Failed to fetch harvest identifiers for organization')
             self.log.exception(e)
             # continue onto the next organization
             return
 
-        self.log.info('Found harvest identifiers count=%d', len(harvester_identifiers))
+        self.log.info('Found harvest identifiers count=%d', len(identifiers))
 
         duplicate_count = 0
         count = itertools.count(start=1)
-        for identifier in harvester_identifiers:
+        for identifier in identifiers:
             if self.stopped:
                 return
 
             self.log.info('Deduplicating identifier=%s progress=%r',
-                          identifier['name'], (next(count), len(harvester_identifiers)))
+                          identifier['name'], (next(count), len(identifiers)))
             try:
-                duplicate_count += self.dedupe_harvest_identifier(identifier['name'])
+                duplicate_count += self.dedupe_identifier(identifier['name'])
             except CkanApiFailureException, e:
                 self.log.error('Failed to dedupe harvest identifier=%s', identifier['name'])
                 continue
@@ -108,9 +108,9 @@ class Deduper(object):
                        (retained_package['id'], retained_package['name']))
         self.ckan_api.update_package(retained_package)
 
-    def dedupe_harvest_identifier(self, identifier):
+    def dedupe_identifier(self, identifier):
         '''
-        Removes duplicate datasets for the given harvest identifier. The
+        Removes duplicate datasets for the given identifier. The
         deduper is meant to be idempotent so that if it is interrupted, it can
         pick up where it left off without losing data.
 
@@ -137,12 +137,12 @@ class Deduper(object):
             {'organization': self.organization_name, 'identifier': identifier},
             )
 
-        log.debug('Fetching number of datasets for harvest identifier')
-        harvest_data_count = self.ckan_api.get_dataset_count(self.organization_name, identifier)
-        log.info('Found packages count=%d', harvest_data_count)
+        log.debug('Fetching number of datasets for unique identifier')
+        dataset_count = self.ckan_api.get_dataset_count(self.organization_name, identifier)
+        log.info('Found packages count=%d', dataset_count)
 
         # If there is only one or less, there's no duplicates.
-        if harvest_data_count <= 1:
+        if dataset_count <= 1:
             log.debug('No duplicates found for harvest identifier.')
             return 0
 
@@ -183,7 +183,7 @@ class Deduper(object):
 
         # Now we can collect the datasets for removal
         duplicate_count = 0
-        for dataset in get_datasets(harvest_data_count):
+        for dataset in get_datasets(dataset_count):
             if self.stopped:
                 self.log.debug('Deduper is stopped, cleaning up...')
                 return duplicate_count

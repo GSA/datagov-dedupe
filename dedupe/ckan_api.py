@@ -130,7 +130,7 @@ class CkanApiClient(object):
         return results[0]
 
 
-    def get_harvester_identifiers(self, organization_name):
+    def get_duplicate_identifiers(self, organization_name):
         response = self.get('/3/action/package_search', params={
             'q': 'organization:"%s" AND state:"active"' % organization_name,
             'fq': 'type:dataset',
