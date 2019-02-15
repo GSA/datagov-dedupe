@@ -49,3 +49,14 @@ optional arguments:
 Install the latest dependencies.
 
     $ pip install -r requirements.in
+
+
+## Running on staging
+
+BSP staging uses a GSA internal SSL certificate. `requests` will fail to verify
+the certificate with an SSLError because the GSA root certificate is not
+included in requests' CA bundle. Instead, use the OS CA bundle, which already
+has the GSA root certificate installed.
+
+    $ export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    $ python duplicates-identifier-api.py ...
