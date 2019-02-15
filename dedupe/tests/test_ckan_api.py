@@ -24,7 +24,7 @@ class TestCkanApiClient(unittest.TestCase):
 
     def test_remove_package(self):
         with mock.patch.object(CkanApiClient, 'request', return_value=None) as mock_request:
-            api = CkanApiClient('http://test', 'api-key-abc')
+            api = CkanApiClient('http://test', 'api-key-abc', dry_run=False)
             api.remove_package('package-123')
 
         mock_request.assert_called_with('POST', mock.ANY, json=dict(id='package-123'))

@@ -50,7 +50,7 @@ class CkanApiClient(object):
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key, dry_run=False):
+    def __init__(self, api_url, api_key, dry_run=True):
         self.api_url = api_url
         self.dry_run = dry_run
         self.client = requests.Session()
