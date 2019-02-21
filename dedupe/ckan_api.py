@@ -110,7 +110,7 @@ class CkanApiClient(object):
         return results[0]
 
     def get_duplicate_identifiers(self, organization_name, is_collection):
-        filter_query = 'organization:"%s" AND type:dataset' % organization_name,
+        filter_query = 'organization:"%s" AND type:dataset' % organization_name
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -122,10 +122,13 @@ class CkanApiClient(object):
             'rows': 0,
             })
 
-        return response.json()['result']['search_facets']['identifier']['items']
+        return \
+            response.json()['result']['search_facets']['identifier']['items']
 
     def get_dataset_count(self, organization_name, identifier, is_collection):
-        filter_query = 'identifier:"%s" AND type:dataset' % identifier,
+        filter_query = \
+            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
+            (identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -137,8 +140,11 @@ class CkanApiClient(object):
 
         return response.json()['result']['count']
 
-    def get_datasets(self, organization_name, identifier, start=0, rows=1000, is_collection=False):
-        filter_query = 'identifier:"%s" AND type:dataset' % identifier
+    def get_datasets(self, organization_name, identifier, start=0, rows=1000,
+                     is_collection=False):
+        filter_query = \
+            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
+            (identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
