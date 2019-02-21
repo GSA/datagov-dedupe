@@ -2,7 +2,19 @@ import unittest
 
 import mock
 
-from ..ckan_api import DryRunException, CkanApiClient
+from ..ckan_api import DryRunException, CkanApiClient, CkanApiCountException
+
+
+class StubResponse(object):
+    '''
+    A fake Response object.
+    '''
+    def __init__(self, data=None):
+        self.data = data if data else dict()
+
+    def json(self):
+        return self.data
+
 
 class TestCkanApiClient(unittest.TestCase):
     def test_request_dry_run(self):
@@ -12,7 +24,7 @@ class TestCkanApiClient(unittest.TestCase):
 
     def test_remove_package(self):
         with mock.patch.object(CkanApiClient, 'request', return_value=None) as mock_request:
-            api = CkanApiClient('http://test', 'api-key-abc')
+            api = CkanApiClient('http://test', 'api-key-abc', dry_run=False)
             api.remove_package('package-123')
 
         mock_request.assert_called_with('POST', mock.ANY, json=dict(id='package-123'))
@@ -23,3 +35,16 @@ class TestCkanApiClient(unittest.TestCase):
             api.remove_package('package-123')
 
         mock_request.assert_not_called()
+
+    def test_get_oldest_dataset_count_exception(self):
+        invalid_count_response = {
+            'result': {
+                'count': 2,
+                'results': []
+            },
+        }
+
+        with mock.patch.object(CkanApiClient, 'request', return_value=StubResponse(invalid_count_response)) as mock_request:
+            api = CkanApiClient('http://test', 'api-key-abc')
+            with self.assertRaises(CkanApiCountException):
+                api.get_oldest_dataset('test-organization', 'package-123', is_collection=False)

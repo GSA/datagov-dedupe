@@ -1,6 +1,6 @@
 # datagov-dedupe
 
-Delete duplicate packages on data.gov.
+Detect and remove duplicate packages on data.gov.
 
 
 ## Usage
@@ -20,12 +20,14 @@ Scan all organizations and dedupe packges for each.
 View the full help documentation with `--help`.
 
 ```
-$ python duplicates-identifier-api.py -h
+$ python duplicates-identifier-api.py --help
 usage: duplicates-identifier-api.py [-h] [--api-key API_KEY]
-                                    [--api-url API_URL] [--dry-run]
+                                    [--api-url API_URL] [--commit] [--debug]
+                                    [--run-id RUN_ID] [--verbose]
                                     [organization_name [organization_name ...]]
 
-Removes duplicate packages on data.gov.
+Detects and removes duplicate packages on data.gov. By default, duplicates are
+detected but not actually removed.
 
 positional arguments:
   organization_name  Names of the organizations to deduplicate.
@@ -34,11 +36,27 @@ optional arguments:
   -h, --help         show this help message and exit
   --api-key API_KEY  Admin API key
   --api-url API_URL  The API base URL to query
-  --dry-run          Treat the API as read-only and make no changes.
+  --commit           Treat the API as writeable and commit the changes.
+  --debug            Include debug output from urllib3.
+  --run-id RUN_ID    An identifier for a single run of the deduplication
+                     script.
+  --verbose, -v      Include verbose log output.
 ```
+
 
 ## Development
 
 Install the latest dependencies.
 
     $ pip install -r requirements.in
+
+
+## Running on staging
+
+BSP staging uses a GSA internal SSL certificate. `requests` will fail to verify
+the certificate with an SSLError because the GSA root certificate is not
+included in requests' CA bundle. Instead, use the OS CA bundle, which already
+has the GSA root certificate installed.
+
+    $ export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    $ python duplicates-identifier-api.py ...

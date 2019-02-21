@@ -16,7 +16,7 @@ class CkanApiException(Exception):
 
 class CkanApiFailureException(CkanApiException):
     '''
-    CKAN API reported success: false. It should be okay to continue using the API.
+    CKAN API reported {success: false}. It should be okay to continue using the API.
     '''
     pass
 
@@ -26,6 +26,13 @@ class CkanApiStatusException(CkanApiException):
     CKAN API returned an unhealthy status code. This indicates something might
     not be working correctly with our configuration or the server could be
     having issues and we should not continue using the API in this state.
+    '''
+    pass
+
+class CkanApiCountException(CkanApiException):
+    '''
+    CKAN API (and solr) returned a non-zero count, but no data. Could this be
+    solr index corruption?
     '''
     pass
 
@@ -43,10 +50,12 @@ class CkanApiClient(object):
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key, dry_run=False):
+    def __init__(self, api_url, api_key, dry_run=True):
         self.api_url = api_url
         self.dry_run = dry_run
         self.client = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(max_retries=3)
+        self.client.mount('https://', adapter)
         self.client.headers.update(Authorization=api_key)
         # Set the auth_tkt cookie to talk to admin API
         self.client.cookies = requests.cookies.cookiejar_from_dict(dict(auth_tkt='1'))
@@ -74,53 +83,75 @@ class CkanApiClient(object):
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
 
-    def get_oldest_dataset(self, harvest_identifier):
+    def get_oldest_dataset(self, organization_name, identifier, is_collection):
+        filter_query = \
+            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
+            (identifier, organization_name)
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
+
+        rows = 1
         response = self.get('/action/package_search', params={
-            'q': 'identifier:"%s"' % harvest_identifier,
-            'fq': 'type:dataset',
+            'fq': filter_query,
             'sort': 'metadata_created asc',
-            'rows': 1,
+            'rows': rows,
             })
 
-        return response.json()['result']['results'][0]
+        results = response.json()['result']['results']
 
-    def get_newest_dataset(self, harvest_identifier):
-        response = self.get('/action/package_search', params={
-            'q': 'identifier:"%s"' % harvest_identifier,
-            'fq': 'type:dataset',
-            'sort': 'metadata_created desc',
-            'rows': 1,
-            })
+        if len(results) != rows:
+            count = response.json()['result']['count']
+            raise CkanApiCountException(
+                'Query reported non-zero count but no data '
+                'count=%(count)s results=%(results)s' % {
+                    'count': count,
+                    'results': len(results),
+                },
+                response)
 
-        return response.json()['result']['results'][0]
+        return results[0]
 
-    def get_harvester_identifiers(self, organization_name):
+    def get_duplicate_identifiers(self, organization_name, is_collection):
+        filter_query = 'organization:"%s" AND type:dataset' % organization_name
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
+
         response = self.get('/3/action/package_search', params={
-            'q': 'organization:"%s" AND state:"active"' % organization_name,
-            'fq': 'type:dataset',
+            'fq': filter_query,
             'facet.field': '["identifier"]',
             'facet.limit': -1,
             'facet.mincount': 2,
             'rows': 0,
             })
 
-        return response.json()['result']['search_facets']['identifier']['items']
+        return \
+            response.json()['result']['search_facets']['identifier']['items']
 
+    def get_dataset_count(self, organization_name, identifier, is_collection):
+        filter_query = \
+            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
+            (identifier, organization_name)
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
 
-    def get_dataset_count(self, organization_name, harvest_identifier):
         response = self.get('/action/package_search', params={
-            'q': 'identifier:"%s" AND state:"active"' % harvest_identifier,
-            'fq': 'type:dataset',
+            'fq': filter_query,
             'sort': 'metadata_created desc',
             'rows': 0,
             })
 
         return response.json()['result']['count']
 
-    def get_datasets(self, organization_name, harvest_identifier, start=0, rows=1000):
+    def get_datasets(self, organization_name, identifier, start=0, rows=1000,
+                     is_collection=False):
+        filter_query = \
+            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
+            (identifier, organization_name)
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
+
         response = self.get('/action/package_search', params={
-            'q': 'identifier:"%s" AND state:"active"' % harvest_identifier,
-            'fq': 'type:dataset',
+            'fq': filter_query,
             'start': start,
             'rows': rows,
             })

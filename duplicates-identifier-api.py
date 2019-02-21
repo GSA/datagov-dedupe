@@ -6,14 +6,16 @@ import logging
 import logging.config
 import os
 import signal
+import sys
 import time
 
 from dedupe.audit import DuplicatePackageLog, RemovedPackageLog
 from dedupe.ckan_api import CkanApiClient
 from dedupe.deduper import Deduper
 
-logging.config.fileConfig('logging.ini')
+logging.basicConfig(stream=sys.stdout, format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 log = logging.getLogger('dedupe')
+log.setLevel(logging.INFO)
 
 # Define module-level context for signal handling
 stopped = False
@@ -37,25 +39,41 @@ def cleanup(signum, frame):
 
 def run():
     '''
-        This code for getting the list of organizations and duplicate duplicate data sets
+    This code for getting the list of organizations and duplicate duplicate data sets
     '''
     global deduper, stopped
 
-    parser = argparse.ArgumentParser(description='Removes duplicate packages on data.gov.')
+    parser = argparse.ArgumentParser(description='Detects and removes duplicate packages on '
+                                     'data.gov. By default, duplicates are detected but not '
+                                     'actually removed.')
     parser.add_argument('--api-key', default=os.getenv('CKAN_API_KEY', None), help='Admin API key')
     parser.add_argument('--api-url', default='https://admin-catalog.data.gov',
                         help='The API base URL to query')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Treat the API as read-only and make no changes.')
+    parser.add_argument('--commit', action='store_true',
+                        help='Treat the API as writeable and commit the changes.')
+    parser.add_argument('--debug', action='store_true',
+                        help='Include debug output from urllib3.')
     parser.add_argument('--run-id', default=datetime.now().strftime('%Y%m%d%H%M%S'),
                         help='An identifier for a single run of the deduplication script.')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='Include verbose log output.')
     parser.add_argument('organization_name', nargs='*',
                         help='Names of the organizations to deduplicate.')
 
     args = parser.parse_args()
 
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+
+    if args.debug:
+        logging.getLogger('urllib3').setLevel(logging.DEBUG)
+
+    dry_run = not args.commit
+    if dry_run:
+        log.info('Dry-run enabled')
+
     log.info('run_id=%s', args.run_id)
-    ckan_api = CkanApiClient(args.api_url, args.api_key, dry_run=args.dry_run)
+    ckan_api = CkanApiClient(args.api_url, args.api_key, dry_run=dry_run)
     duplicate_package_log = DuplicatePackageLog(api_url=args.api_url, run_id=args.run_id)
     removed_package_log = RemovedPackageLog(run_id=args.run_id)
 
@@ -63,8 +81,7 @@ def run():
     signal.signal(signal.SIGTERM, cleanup)
     signal.signal(signal.SIGINT, cleanup)
 
-    if args.dry_run:
-        log.info('Dry run enabled')
+    log.info('Using api=%s', args.api_url)
 
     if args.organization_name:
         org_list = args.organization_name
