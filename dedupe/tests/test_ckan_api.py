@@ -47,4 +47,4 @@ class TestCkanApiClient(unittest.TestCase):
         with mock.patch.object(CkanApiClient, 'request', return_value=StubResponse(invalid_count_response)) as mock_request:
             api = CkanApiClient('http://test', 'api-key-abc')
             with self.assertRaises(CkanApiCountException):
-                api.get_oldest_dataset('package-123', is_collection=False)
+                api.get_oldest_dataset('test-organization', 'package-123', is_collection=False)

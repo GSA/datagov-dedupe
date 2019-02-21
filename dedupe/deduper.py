@@ -213,7 +213,7 @@ class Deduper(object):
 
         # We want to keep the oldest dataset
         self.log.debug('Fetching oldest dataset for identifier=%s', identifier)
-        retained_dataset = self.ckan_api.get_oldest_dataset(identifier, is_collection)
+        retained_dataset = self.ckan_api.get_oldest_dataset(self.organization_name, identifier, is_collection)
 
         # Check if the dedupe process has been started on this package
         if not util.get_package_extra(retained_dataset, 'datagov_dedupe'):

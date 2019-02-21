@@ -83,8 +83,10 @@ class CkanApiClient(object):
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
 
-    def get_oldest_dataset(self, identifier, is_collection):
-        filter_query = 'identifier:"%s" AND type:dataset' % identifier
+    def get_oldest_dataset(self, organization_name, identifier, is_collection):
+        filter_query = \
+            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
+            (identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
