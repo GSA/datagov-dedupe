@@ -72,10 +72,14 @@ class DuplicatePackageLog(object):
             'duplicate_source_hash': util.get_package_extra(duplicate_package, 'source_hash'),
             'duplicate_title': duplicate_package['title'],
             'duplicate_url': '%s/dataset/%s' % (self.api_url, duplicate_package['name']),
+            'duplicate_is_colleciton': bool(util.get_package_extra(duplicate_package, 'collection_metadata')),
+            'duplicate_is_colleciton_member': bool(util.get_package_extra(duplicate_package, 'collection_package_id')),
+            'duplicate_source_id': util.get_package_extra(duplicate_package, 'harvest_source_id'),
             'organization': duplicate_package['organization']['name'],
             'retained_id': retained_package['id'],
             'retained_metadata_created': retained_package['metadata_created'],
             'retained_url': '%s/dataset/%s' % (self.api_url, retained_package['name']),
+            'retained_source_id': util.get_package_extra(retained_package, 'harvest_source_id'),
         })
 
         # Persist the write to disk
