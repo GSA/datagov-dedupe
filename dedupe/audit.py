@@ -41,9 +41,13 @@ class DuplicatePackageLog(object):
         'duplicate_metadata_created',     # Duplicate CKAN metadata_created from CKAN
         'duplicate_identifier',           # Duplicate POD metadata identifier (in CKAN extra)
         'duplicate_source_hash',          # Duplicate source_hash (in CKAN extra)
+        'duplicate_is_collection',        # Duplicate is a collection dataset
+        'duplicate_is_collection_member', # Duplicate is a collection member
+        'duplicate_harvest_source',       # Duplicate harvest_source_id (in CKAN extra)
         'retained_id',          # Retained id (CKAN id)
         'retained_url',         # Retained URL (site URL + CKAN name)
         'retained_metadata_created',      # Retained metadata_created
+        'retained_harvest_source',        # Retained harvest_source_id (in CKAN extra)
     ]
 
     def __init__(self, filename=None, api_url=None, run_id=None):
@@ -67,19 +71,19 @@ class DuplicatePackageLog(object):
         self.log.writerow({
             'duplicate_id': duplicate_package['id'],
             'duplicate_identifier': util.get_package_extra(duplicate_package, 'identifier'),
+            'duplicate_is_collection': bool(util.get_package_extra(duplicate_package, 'collection_metadata')),
+            'duplicate_is_collection_member': bool(util.get_package_extra(duplicate_package, 'collection_package_id')),
             'duplicate_metadata_created': duplicate_package['metadata_created'],
             'duplicate_name': duplicate_package['name'],
             'duplicate_source_hash': util.get_package_extra(duplicate_package, 'source_hash'),
+            'duplicate_harvest_source': util.get_package_extra(duplicate_package, 'harvest_source_id'),
             'duplicate_title': duplicate_package['title'],
             'duplicate_url': '%s/dataset/%s' % (self.api_url, duplicate_package['name']),
-            'duplicate_is_colleciton': bool(util.get_package_extra(duplicate_package, 'collection_metadata')),
-            'duplicate_is_colleciton_member': bool(util.get_package_extra(duplicate_package, 'collection_package_id')),
-            'duplicate_source_id': util.get_package_extra(duplicate_package, 'harvest_source_id'),
             'organization': duplicate_package['organization']['name'],
             'retained_id': retained_package['id'],
             'retained_metadata_created': retained_package['metadata_created'],
+            'retained_harvest_source': util.get_package_extra(retained_package, 'harvest_source_id'),
             'retained_url': '%s/dataset/%s' % (self.api_url, retained_package['name']),
-            'retained_source_id': util.get_package_extra(retained_package, 'harvest_source_id'),
         })
 
         # Persist the write to disk
