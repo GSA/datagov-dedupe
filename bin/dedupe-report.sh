@@ -15,6 +15,8 @@ from_address=${DATAGOV_DEDUPE_FROM_ADDRESS:-'no-reply+dedupe-report@data.gov'}
 dedupe_run_log=$(mktemp)
 dedupe_report=$(mktemp)
 
+report_date=$(date +%Y-%m-%d)
+
 function cleanup () {
   rm -rf "$dedupe_report" "$dedupe_run_log"
 }
@@ -32,10 +34,8 @@ if [[ "$(wc -l "$dedupe_report")" -eq 0 ]]; then
   exit 0
 fi
 
-mail -a "From: $from_address" "$@" <<EOF
-Subject: Data.gov duplicate report
-
-Hello,
+mail -a "From: $from_address" -s "[datagov-dedupe] report $report_date" "$@" <<EOF
+Hello team,
 
 This is datagov-dedupe reporting on the number of duplicate packages detected on Data.gov.
 
