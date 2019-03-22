@@ -9,6 +9,8 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
+from_address=${DATAGOV_DEDUPE_FROM_ADDRESS:-'no-reply+dedupe-report@data.gov'}
+
 # Log for this run.
 dedupe_run_log=$(mktemp)
 dedupe_report=$(mktemp)
@@ -30,7 +32,7 @@ if [[ "$(wc -l "$dedupe_report")" -eq 0 ]]; then
   exit 0
 fi
 
-mail "$@" <<EOF
+mail -a "From: $from_address" "$@" <<EOF
 Subject: Data.gov duplicate report
 
 Hello,
