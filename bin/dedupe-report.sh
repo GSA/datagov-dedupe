@@ -27,9 +27,9 @@ trap cleanup EXIT
 python duplicates-identifier-api.py 2>&1 | tee -a dedupe.log > "$dedupe_run_log"
 
 # For the actual report, include errors, warnings, and non-zero summary items.
-grep -E 'ERROR|WARN|Summary' | grep -v 'duplicate_count=0' < "$dedupe_run_log"  > "$dedupe_report"
+grep -E 'ERROR|WARN|Summary' < "$dedupe_run_log" | grep -v 'duplicate_count=0' > "$dedupe_report"
 
-if [[ "$(wc -l "$dedupe_report")" -eq 0 ]]; then
+if [[ "$(wc -l "$dedupe_report")" == 0 ]]; then
   # Nothing in the report
   exit 0
 fi
@@ -37,7 +37,7 @@ fi
 mail -a "From: $from_address" -s "[datagov-dedupe] report $report_date" "$@" <<EOF
 Hello team,
 
-This is datagov-dedupe reporting on the number of duplicate packages detected on Data.gov.
+This is datagov-dedupe reporting on the number of duplicate packages detected on Data.gov for $report_date.
 
 $(cat "$dedupe_report")
 
