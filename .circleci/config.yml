@@ -3,23 +3,21 @@ jobs:
   build:
     docker:
       - image: circleci/python:2.7
+    environment:
+      PIPENV_VENV_IN_PROJECT: 1
     steps:
       - checkout
       - restore_cache:
           keys:
-            - requirements-v1-{{ checksum "requirements.txt" }}
-            - requirements-v1-
-      - run: |
-          virtualenv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
+            - pipfile-v1-{{ checksum "Pipfile.lock" }}
+            - pipfile-v1-
+      - run: pipenv install --dev
       - save_cache:
-          key: requirements-v1-{{ checksum "requirements.txt" }}
+          key: pipfile-v1-{{ checksum "Pipfile.lock" }}
           paths:
-            - venv
-      - run: |
-          source venv/bin/activate
-          python setup.py test
+            - .venv
+      - run: pipenv run python setup.py test
+
 
 workflows:
   version: 2
