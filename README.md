@@ -7,20 +7,20 @@ Detect and remove duplicate packages on data.gov.
 
 Install the dependencies.
 
-    $ pip install -r requirements.txt
+    $ pipenv sync
 
 Deduplicate packages for a specific organization.
 
-    $ python duplicates-identifier-api.py [organization-name]
+    $ pipenv run python duplicates-identifier-api.py [organization-name]
 
 Scan all organizations and dedupe packges for each.
 
-    $ python duplicates-identifier-api.py
+    $ pipenv run python duplicates-identifier-api.py
 
 View the full help documentation with `--help`.
 
 ```
-$ python duplicates-identifier-api.py --help
+$ pipenv run python duplicates-identifier-api.py --help
 usage: duplicates-identifier-api.py [-h] [--api-key API_KEY]
                                     [--api-url API_URL] [--commit] [--debug]
                                     [--run-id RUN_ID] [--verbose]
@@ -40,6 +40,8 @@ optional arguments:
   --debug            Include debug output from urllib3.
   --run-id RUN_ID    An identifier for a single run of the deduplication
                      script.
+  --newest           Keep the newest dataset and remove older ones 
+                     (by default the oldest is kept)
   --verbose, -v      Include verbose log output.
 ```
 
