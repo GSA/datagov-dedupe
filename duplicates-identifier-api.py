@@ -52,7 +52,7 @@ def run():
     parser.add_argument('--commit', action='store_true',
                         help='Treat the API as writeable and commit the changes.')
     parser.add_argument('--newest', action='store_true',
-                        help='Keep the newest dataset and remove older ones (default keeps oldest')
+                        help='Keep the newest dataset and remove older ones (default keeps oldest)')
     parser.add_argument('--debug', action='store_true',
                         help='Include debug output from urllib3.')
     parser.add_argument('--run-id', default=datetime.now().strftime('%Y%m%d%H%M%S'),
