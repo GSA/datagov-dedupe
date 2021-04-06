@@ -26,13 +26,20 @@ class ContextLoggerAdapter(logging.LoggerAdapter):
 
 
 class Deduper(object):
-    def __init__(self, organization_name, ckan_api, removed_package_log=None, duplicate_package_log=None, run_id=None):
+    def __init__(self,
+                 organization_name,
+                 ckan_api,
+                 removed_package_log=None,
+                 duplicate_package_log=None,
+                 run_id=None,
+                 oldest=True):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
         self.removed_package_log = removed_package_log
         self.duplicate_package_log = duplicate_package_log
         self.stopped = False
+        self.oldest = oldest
 
         if not run_id:
             run_id = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -181,7 +188,8 @@ class Deduper(object):
 
         1. Get the number of datasets with this identifier.
            a. If there is only one dataset, no duplicates. Continue with next identifier.
-        2. Fetch the oldest dataset which is to be retained.
+        2. Fetch the dataset which is to be retained (oldest or newest depending on
+            --newest).
         3. Mark the retained dataset as being processed.
         4. Fetch the datasets for this identifier in batches.
         5. For each dataset:
@@ -212,8 +220,8 @@ class Deduper(object):
             return 0
 
         # We want to keep the oldest dataset
-        self.log.debug('Fetching oldest dataset for identifier=%s', identifier)
-        retained_dataset = self.ckan_api.get_oldest_dataset(self.organization_name, identifier, is_collection)
+        self.log.debug('Fetching %s dataset for identifier=%s', 'oldest' if self.oldest else 'newest', identifier)
+        retained_dataset = self.ckan_api.get_dataset_to_save(self.organization_name, identifier, is_collection, oldest=self.oldest)
 
         # Check if the dedupe process has been started on this package
         if not util.get_package_extra(retained_dataset, 'datagov_dedupe'):

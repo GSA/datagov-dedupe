@@ -83,7 +83,7 @@ class CkanApiClient(object):
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
 
-    def get_oldest_dataset(self, organization_name, identifier, is_collection):
+    def get_dataset_to_save(self, organization_name, identifier, is_collection, oldest=True):
         filter_query = \
             'identifier:"%s" AND organization:"%s" AND type:dataset' % \
             (identifier, organization_name)
@@ -93,7 +93,7 @@ class CkanApiClient(object):
         rows = 1
         response = self.get('/action/package_search', params={
             'fq': filter_query,
-            'sort': 'metadata_created asc',
+            'sort': 'metadata_created asc' if oldest else 'metadata_created desc',
             'rows': rows,
             })
 
