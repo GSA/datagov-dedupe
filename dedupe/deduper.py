@@ -219,9 +219,13 @@ class Deduper(object):
             log.debug('No duplicates found for identifier.')
             return 0
 
+        sort_order = 'asc' if self.oldest else 'desc'
         # We want to keep the oldest dataset
         self.log.debug('Fetching %s dataset for identifier=%s', 'oldest' if self.oldest else 'newest', identifier)
-        retained_dataset = self.ckan_api.get_dataset_to_save(self.organization_name, identifier, is_collection, oldest=self.oldest)
+        retained_dataset = self.ckan_api.get_dataset(self.organization_name,
+                                                     identifier,
+                                                     is_collection,
+                                                     sort_order=sort_order)
 
         # Check if the dedupe process has been started on this package
         if not util.get_package_extra(retained_dataset, 'datagov_dedupe'):
