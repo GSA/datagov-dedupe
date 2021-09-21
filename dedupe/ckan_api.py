@@ -150,7 +150,11 @@ class CkanApiClient(object):
             'sort': 'metadata_created desc',
             'rows': 0,
             })
-        return response.json()['result']
+
+        search_result = response.json()['result']
+        if search_result['count'] > 0:
+            return search_result['results']
+        return None
 
     def get_datasets(self, organization_name, identifier, start=0, rows=1000,
                      is_collection=False):

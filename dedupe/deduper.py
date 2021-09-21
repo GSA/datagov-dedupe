@@ -31,6 +31,7 @@ class Deduper(object):
                  ckan_api,
                  removed_package_log=None,
                  duplicate_package_log=None,
+                 collection_package_log=None,
                  run_id=None,
                  oldest=True):
         self.organization_name = organization_name
@@ -38,6 +39,7 @@ class Deduper(object):
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
         self.removed_package_log = removed_package_log
         self.duplicate_package_log = duplicate_package_log
+        self.collection_package_log = collection_package_log
         self.stopped = False
         self.oldest = oldest
 
@@ -150,16 +152,19 @@ class Deduper(object):
         #  dataset that is marked for removal. Update collection records
         #  to point to the dataset that will be retained
         collection_datasets = self.ckan_api.get_datasets_in_collection(duplicate_package['id'])
-        if collection_datasets['count'] > 0:
+        if collection_datasets is not None:
             self.log.info('Updating collection records for dataset=%r',
                           (duplicate_package['id'], duplicate_package['name']))
-            for cd in collection_datasets['results']:
+            for cd in collection_datasets:
                 self.log.info('Updating record %s', cd['title'])
                 for e in cd['extras']:
                     if e['key'] == "collection_package_id":
-                        e.value = retained_package['id']
+                        e['value'] = retained_package['id']
                         break
                 self.ckan_api.update_package(cd)
+                if self.collection_package_log:
+                    self.collection_package_log.add(retained_package['id'])
+                self.log.info('Updated record with collection id %s', retained_package['id'])
 
     def mark_retained_package(self, retained_package):
         '''
