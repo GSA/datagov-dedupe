@@ -12,11 +12,19 @@ class TestDeduper(unittest.TestCase):
     def setUp(self):
         self.duplicate_package_log = mock.Mock(DuplicatePackageLog)
         self.removed_package_log = mock.Mock(RemovedPackageLog)
+        self.collection_package_log = mock.Mock(RemovedPackageLog)
 
         self.ckan_api = mock.Mock(CkanApiClient)
-        self.deduper = Deduper('test-org', self.ckan_api, removed_package_log=self.removed_package_log, duplicate_package_log=self.duplicate_package_log)
+        self.deduper = Deduper('test-org', self.ckan_api, removed_package_log=self.removed_package_log, duplicate_package_log=self.duplicate_package_log, collection_package_log=self.collection_package_log)
 
     def test_remove_duplicate(self):
+        self.ckan_api.get_datasets_in_collection.return_value = [{
+            "title": "dataset-in-collection",
+            "extras": [{
+                "key": "collection_package_id",
+                "value": "123"
+            }]
+        }]
         duplicate = {'id': '123', 'name': 'duplicate-package'}
         retained = {'id': '456', 'name': 'retained-package'}
 
@@ -26,6 +34,7 @@ class TestDeduper(unittest.TestCase):
         self.removed_package_log.add.assert_called_once_with(duplicate)
         self.ckan_api.remove_package.assert_called_once_with(duplicate['id'])
 
+        self.collection_package_log.add.assert_called_once_with(retained['id'])
 
     def test_mark_retained_package(self):
         identifier = 'harvest-identifier-1'
