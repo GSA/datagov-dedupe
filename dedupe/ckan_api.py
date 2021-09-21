@@ -142,6 +142,16 @@ class CkanApiClient(object):
 
         return response.json()['result']['count']
 
+    def get_datasets_in_collection(self, package_id):
+        filter_query = 'collection_package_id:%s' % package_id
+
+        response = self.get('/action/package_search', params={
+            'fq': filter_query,
+            'sort': 'metadata_created desc',
+            'rows': 0,
+            })
+        return response.json()['result']
+
     def get_datasets(self, organization_name, identifier, start=0, rows=1000,
                      is_collection=False):
         filter_query = \
