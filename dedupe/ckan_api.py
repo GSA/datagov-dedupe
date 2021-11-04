@@ -83,10 +83,10 @@ class CkanApiClient(object):
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
 
-    def get_dataset(self, organization_name, identifier, is_collection, sort_order='asc'):
+    def get_dataset(self, organization_name, guid, is_collection, sort_order='asc'):
         filter_query = \
-            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
-            (identifier, organization_name)
+            'guid:"%s" AND organization:"%s" AND type:dataset' % \
+            (guid, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -118,19 +118,19 @@ class CkanApiClient(object):
 
         response = self.get('/3/action/package_search', params={
             'fq': filter_query,
-            'facet.field': '["identifier"]',
+            'facet.field': '["guid"]',
             'facet.limit': -1,
             'facet.mincount': 2,
             'rows': 0,
             })
 
         return \
-            response.json()['result']['search_facets']['identifier']['items']
+            response.json()['result']['search_facets']['guid']['items']
 
-    def get_dataset_count(self, organization_name, identifier, is_collection):
+    def get_dataset_count(self, organization_name, guid, is_collection):
         filter_query = \
-            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
-            (identifier, organization_name)
+            'guid:"%s" AND organization:"%s" AND type:dataset' % \
+            (guid, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -156,11 +156,11 @@ class CkanApiClient(object):
             return search_result['results']
         return None
 
-    def get_datasets(self, organization_name, identifier, start=0, rows=1000,
+    def get_datasets(self, organization_name, guid, start=0, rows=1000,
                      is_collection=False):
         filter_query = \
-            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
-            (identifier, organization_name)
+            'guid:"%s" AND organization:"%s" AND type:dataset' % \
+            (guid, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
