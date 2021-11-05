@@ -152,7 +152,7 @@ class Deduper(object):
             #  the end of the name, we want to rename it to the "standard"
             #  name to keep the typical URL. 
             self.log.info('Renaming kept package from %s to %s',
-                      (retained_package['name'], duplicate_package['name']))
+                      retained_package['name'], duplicate_package['name'])
             retained_package['name'] = duplicate_package['name']
             self.ckan_api.update_package(retained_package)
             if self.removed_package_log:
