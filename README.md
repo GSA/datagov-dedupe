@@ -24,6 +24,7 @@ $ pipenv run python duplicates-identifier-api.py --help
 usage: duplicates-identifier-api.py [-h] [--api-key API_KEY]
                                     [--api-url API_URL] [--commit] [--debug]
                                     [--run-id RUN_ID] [--verbose]
+                                    [--newest] [--update-name]
                                     [organization_name [organization_name ...]]
 
 Detects and removes duplicate packages on data.gov. By default, duplicates are
@@ -42,6 +43,9 @@ optional arguments:
                      script.
   --newest           Keep the newest dataset and remove older ones 
                      (by default the oldest is kept)
+  --update-name      Update the name of the kept package to be the standard
+                     shortest name, whether that was the duplicate package
+                     name or the to be kept package name.
   --verbose, -v      Include verbose log output.
 ```
 

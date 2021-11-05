@@ -54,7 +54,7 @@ def run():
     parser.add_argument('--newest', action='store_true',
                         help='Keep the newest dataset and remove older ones (default keeps oldest)')
     parser.add_argument('--update-name', action='store_true',
-                        help='Update the name of the kept package to be the standard shortest name, whether that was the duplicate package name or the to be kept package name')
+                        help='Update the name of the kept package to be the standard shortest name, whether that was the duplicate package name or the to be kept package name.')
     parser.add_argument('--debug', action='store_true',
                         help='Include debug output from urllib3.')
     parser.add_argument('--run-id', default=datetime.now().strftime('%Y%m%d%H%M%S'),
