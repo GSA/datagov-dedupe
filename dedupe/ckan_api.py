@@ -123,9 +123,13 @@ class CkanApiClient(object):
             'facet.mincount': 2,
             'rows': 0,
             })
+        
+        dupes = response.json()['result']['facets']['identifier']
+        # If you want to run 2 scripts in parallel, run one version with normal sort
+        # and another with `reverse=True`
 
-        return \
-            response.json()['result']['search_facets']['identifier']['items']
+        return sorted(dupes, reverse=True)
+            
 
     def get_dataset_count(self, organization_name, identifier, is_collection):
         filter_query = \
