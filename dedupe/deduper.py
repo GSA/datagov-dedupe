@@ -147,6 +147,17 @@ class Deduper(object):
 
         self.ckan_api.remove_package(duplicate_package['id'])
 
+        if(len(duplicate_package['name']) < len(retained_package['name'])):
+            # If the package to be retained has extra random character at
+            #  the end of the name, we want to rename it to the "standard"
+            #  name to keep the typical URL. 
+            self.log.info('Renaming kept package from %s to %s',
+                      (retained_package['name'], duplicate_package['name']))
+            retained_package['name'] = duplicate_package['name']
+            self.ckan_api.update_package(retained_package)
+            if self.removed_package_log:
+                self.removed_package_log.add(retained_package)
+
     def update_collection_datasets(self, duplicate_package, retained_package):
         # Collection records may not have changed, and may be linked to the
         #  dataset that is marked for removal. Update collection records
