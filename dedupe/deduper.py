@@ -33,7 +33,8 @@ class Deduper(object):
                  duplicate_package_log=None,
                  collection_package_log=None,
                  run_id=None,
-                 oldest=True):
+                 oldest=True,
+                 update_name=False):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
@@ -42,6 +43,7 @@ class Deduper(object):
         self.collection_package_log = collection_package_log
         self.stopped = False
         self.oldest = oldest
+        self.update_name = update_name
 
         if not run_id:
             run_id = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -147,7 +149,8 @@ class Deduper(object):
 
         self.ckan_api.remove_package(duplicate_package['id'])
 
-        if(len(duplicate_package['name']) < len(retained_package['name'])):
+        if(len(duplicate_package['name']) < len(retained_package['name'])
+            and self.update_name ):
             # If the package to be retained has extra random character at
             #  the end of the name, we want to rename it to the "standard"
             #  name to keep the typical URL. 

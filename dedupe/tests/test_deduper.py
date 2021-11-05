@@ -15,7 +15,7 @@ class TestDeduper(unittest.TestCase):
         self.collection_package_log = mock.Mock(RemovedPackageLog)
 
         self.ckan_api = mock.Mock(CkanApiClient)
-        self.deduper = Deduper('test-org', self.ckan_api, removed_package_log=self.removed_package_log, duplicate_package_log=self.duplicate_package_log, collection_package_log=self.collection_package_log)
+        self.deduper = Deduper('test-org', self.ckan_api, removed_package_log=self.removed_package_log, duplicate_package_log=self.duplicate_package_log, collection_package_log=self.collection_package_log, update_name=True)
 
     def test_remove_duplicate(self):
         self.ckan_api.get_datasets_in_collection.return_value = [{
@@ -26,17 +26,25 @@ class TestDeduper(unittest.TestCase):
             }]
         }]
         duplicate = {'id': '123', 'name': 'duplicate-package'}
-        retained = {'id': '456', 'name': 'retained-package-12345'}
+        retained = {'id': '456', 'name': 'retained-package'}
 
         self.deduper.remove_duplicate(duplicate, retained)
 
         self.duplicate_package_log.add.assert_called_once_with(duplicate, retained)
-        self.removed_package_log.add.assert_any_call(duplicate)
+        self.removed_package_log.add.assert_called_once_with(duplicate)
         self.ckan_api.remove_package.assert_called_once_with(duplicate['id'])
 
         self.collection_package_log.add.assert_called_once_with(retained['id'])
-        retained['name'] = duplicate['name']
-        self.removed_package_log.add.assert_called_with(retained)
+
+    def test_update_name(self):
+        self.ckan_api.get_datasets_in_collection.return_value = []
+        name_extra_characters = {'id': 'to-be-kept', 'name': 'normal-name-12345'}
+        normal_name = {'id': 'duplicate', 'name': 'normal-name'}
+
+        # The normal name is considered the duplicate in this case
+        self.deduper.remove_duplicate(normal_name, name_extra_characters)
+        # Validate that the to-be-kept
+        self.removed_package_log.add.assert_called_with({'id': 'to-be-kept', 'name': 'normal-name'})
 
     def test_mark_retained_package(self):
         identifier = 'harvest-identifier-1'
