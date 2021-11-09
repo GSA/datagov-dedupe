@@ -33,8 +33,7 @@ class Deduper(object):
                  duplicate_package_log=None,
                  collection_package_log=None,
                  run_id=None,
-                 oldest=True,
-                 update_name=False):
+                 oldest=True):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
@@ -43,7 +42,6 @@ class Deduper(object):
         self.collection_package_log = collection_package_log
         self.stopped = False
         self.oldest = oldest
-        self.update_name = update_name
 
         if not run_id:
             run_id = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -74,7 +72,7 @@ class Deduper(object):
 
             self.log.debug('Fetching %s dataset identifiers with duplicates', label)
             try:
-                identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name,
+                identifiers = self.ckan_api.get_duplicate_guids(self.organization_name,
                                                                       is_collection)
             except CkanApiFailureException, exc:
                 self.log.error('Failed to fetch %s dataset identifiers for organization', label)
@@ -96,6 +94,7 @@ class Deduper(object):
 
                 self.log.info('Deduplicating identifier=%s progress=%r',
                               identifier, (next(count), len(identifiers)))
+                # identify and mark as duplicates
                 try:
                     duplicate_count += self.dedupe_identifier(identifier, is_collection)
                 except CkanApiFailureException:
@@ -148,18 +147,6 @@ class Deduper(object):
         self.update_collection_datasets(duplicate_package, retained_package)
 
         self.ckan_api.remove_package(duplicate_package['id'])
-
-        if(len(duplicate_package['name']) < len(retained_package['name'])
-            and self.update_name ):
-            # If the package to be retained has extra random character at
-            #  the end of the name, we want to rename it to the "standard"
-            #  name to keep the typical URL. 
-            self.log.info('Renaming kept package from %s to %s',
-                      retained_package['name'], duplicate_package['name'])
-            retained_package['name'] = duplicate_package['name']
-            self.ckan_api.update_package(retained_package)
-            if self.removed_package_log:
-                self.removed_package_log.add(retained_package)
 
     def update_collection_datasets(self, duplicate_package, retained_package):
         # Collection records may not have changed, and may be linked to the
