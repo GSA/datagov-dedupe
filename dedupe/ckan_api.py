@@ -50,7 +50,7 @@ class CkanApiClient(object):
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key, dry_run=True):
+    def __init__(self, api_url, api_key, dry_run=True, identifier_type='identifier'):
         self.api_url = api_url
         self.dry_run = dry_run
         self.client = requests.Session()
@@ -59,6 +59,7 @@ class CkanApiClient(object):
         self.client.headers.update(Authorization=api_key)
         # Set the auth_tkt cookie to talk to admin API
         self.client.cookies = requests.cookies.cookiejar_from_dict(dict(auth_tkt='1'))
+        self.identifier_type = identifier_type
 
     def request(self, method, path, **kwargs):
         url = '%s/api%s' % (self.api_url, path)
@@ -83,10 +84,10 @@ class CkanApiClient(object):
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
 
-    def get_dataset(self, organization_name, guid, is_collection, sort_order='asc'):
+    def get_dataset(self, organization_name, identifier, is_collection, sort_order='asc'):
         filter_query = \
-            'guid:"%s" AND organization:"%s" AND type:dataset' % \
-            (guid, organization_name)
+            '%s:"%s" AND organization:"%s" AND type:dataset' % \
+            (self.identifier_type, identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -111,26 +112,36 @@ class CkanApiClient(object):
 
         return results[0]
 
-    def get_duplicate_guids(self, organization_name, is_collection):
+    def get_duplicate_identifiers(self, organization_name, is_collection):
         filter_query = 'organization:"%s" AND type:dataset' % organization_name
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
-        response = self.get('/3/action/package_search', params={
-            'fq': filter_query,
-            'facet.field': '["guid"]',
-            'facet.limit': -1,
-            'facet.mincount': 2,
-            'rows': 0,
-            })
+        if self.identifier_type == 'identifier':
+            response = self.get('/3/action/package_search', params={
+                'fq': filter_query,
+                'facet.field': '["identifier"]',
+                'facet.limit': -1,
+                'facet.mincount': 2,
+                'rows': 0,
+                })
+        else: 
+            response = self.get('/3/action/package_search', params={
+                'fq': filter_query,
+                'facet.field': '["guid"]',
+                'facet.limit': -1,
+                'facet.mincount': 2,
+                'rows': 0,
+                })
+
 
         return \
-            response.json()['result']['search_facets']['guid']['items']
+            response.json()['result']['search_facets'][self.identifier_type]['items']
 
-    def get_dataset_count(self, organization_name, guid, is_collection):
+    def get_dataset_count(self, organization_name, identifier, is_collection):
         filter_query = \
-            'guid:"%s" AND organization:"%s" AND type:dataset' % \
-            (guid, organization_name)
+            '%s:"%s" AND organization:"%s" AND type:dataset' % \
+            (self.identifier_type, identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -156,13 +167,12 @@ class CkanApiClient(object):
             return search_result['results']
         return None
 
-    def get_datasets(self, organization_name, guid, start=0, rows=1000,
+    def get_datasets(self, organization_name, identifier, start=0, rows=1000,
                      is_collection=False):
         filter_query = \
-            'guid:"%s" AND organization:"%s" AND type:dataset' % \
-            (guid, organization_name)
+            '%s:"%s" AND organization:"%s" AND type:dataset' % \
+            (self.identifier_type, identifier, organization_name)
         if is_collection:
-            
             filter_query = '%s AND collection_package_id:*' % filter_query
 
         response = self.get('/action/package_search', params={
