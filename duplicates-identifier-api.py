@@ -53,6 +53,8 @@ def run():
                         help='Treat the API as writeable and commit the changes.')
     parser.add_argument('--newest', action='store_true',
                         help='Keep the newest dataset and remove older ones (default keeps oldest)')
+    parser.add_argument('--reverse', action='store_true',
+                        help='Reverse the order of ids to parse (for running with another script in parallel)')
     parser.add_argument('--update-name', action='store_true',
                         help='Update the name of the kept package to be the standard shortest name, whether that was the duplicate package name or the to be kept package name.')
     parser.add_argument('--debug', action='store_true',
@@ -110,7 +112,8 @@ def run():
             duplicate_package_log,
             run_id=args.run_id,
             oldest=not args.newest,
-            update_name=args.update_name)
+            update_name=args.update_name,
+            reverse=args.reverse)
         deduper.dedupe()
 
 

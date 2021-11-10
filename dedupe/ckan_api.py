@@ -61,7 +61,10 @@ class CkanApiClient(object):
         self.client.cookies = requests.cookies.cookiejar_from_dict(dict(auth_tkt='1'))
 
     def request(self, method, path, **kwargs):
-        url = '%s/api%s' % (self.api_url, path)
+        if method == 'POST':
+            url = '%s/api%s' % (self.api_url, path)
+        else:
+            url = '%s/api%s' % ("https://catalog.data.gov", path)
 
         if self.dry_run and method not in READ_ONLY_METHODS:
             raise DryRunException('Cannot call method in dry_run method=%s' % method)
@@ -111,7 +114,7 @@ class CkanApiClient(object):
 
         return results[0]
 
-    def get_duplicate_identifiers(self, organization_name, is_collection):
+    def get_duplicate_identifiers(self, organization_name, is_collection, reverse=False):
         filter_query = 'organization:"%s" AND type:dataset' % organization_name
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
@@ -127,8 +130,7 @@ class CkanApiClient(object):
         dupes = response.json()['result']['facets']['identifier']
         # If you want to run 2 scripts in parallel, run one version with normal sort
         # and another with `reverse=True`
-
-        return sorted(dupes, reverse=True)
+        return sorted(dupes, reverse=reverse)
             
 
     def get_dataset_count(self, organization_name, identifier, is_collection):

@@ -34,7 +34,8 @@ class Deduper(object):
                  collection_package_log=None,
                  run_id=None,
                  oldest=True,
-                 update_name=False):
+                 update_name=False,
+                 reverse=False):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
@@ -44,6 +45,7 @@ class Deduper(object):
         self.stopped = False
         self.oldest = oldest
         self.update_name = update_name
+        self.reverse = reverse
 
         if not run_id:
             run_id = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -75,7 +77,7 @@ class Deduper(object):
             self.log.debug('Fetching %s dataset identifiers with duplicates', label)
             try:
                 identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name,
-                                                                      is_collection)
+                                                                      is_collection, reverse=self.reverse)
             except CkanApiFailureException, exc:
                 self.log.error('Failed to fetch %s dataset identifiers for organization', label)
                 self.log.exception(exc)
