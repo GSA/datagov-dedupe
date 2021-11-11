@@ -44,6 +44,7 @@ class Deduper(object):
         self.collection_package_log = collection_package_log
         self.stopped = False
         self.oldest = oldest
+        self.update_name = update_name
         self.identifier_type = identifier_type
 
         if not run_id:
