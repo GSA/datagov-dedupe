@@ -192,7 +192,7 @@ class CkanApiClient(object):
             log.info('Not removing package in dry_run package=%s', package_id)
             return
 
-        self.request('POST', '/action/package_purge', json={
+        self.request('POST', '/action/dataset_purge', json={
             'id': package_id,
         })
 
