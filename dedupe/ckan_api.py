@@ -117,23 +117,13 @@ class CkanApiClient(object):
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
-        if self.identifier_type == 'identifier':
-            response = self.get('/3/action/package_search', params={
-                'fq': filter_query,
-                'facet.field': '["identifier"]',
-                'facet.limit': -1,
-                'facet.mincount': 2,
-                'rows': 0,
-                })
-        else: 
-            response = self.get('/3/action/package_search', params={
-                'fq': filter_query,
-                'facet.field': '["guid"]',
-                'facet.limit': -1,
-                'facet.mincount': 2,
-                'rows': 0,
-                })
-
+        response = self.get('/3/action/package_search', params={
+            'fq': filter_query,
+            'facet.field': '["'+self.identifier_type+'"]',
+            'facet.limit': -1,
+            'facet.mincount': 2,
+            'rows': 0,
+            })
 
         return \
             response.json()['result']['search_facets'][self.identifier_type]['items']

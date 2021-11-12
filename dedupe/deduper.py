@@ -78,7 +78,7 @@ class Deduper(object):
             try:
                 identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name,
                                                                       is_collection)
-            except CkanApiFailureException, exc:
+            except CkanApiFailureException as exc:
                 self.log.error('Failed to fetch %s dataset identifiers for organization', label)
                 self.log.exception(exc)
                 # continue onto the next organization
@@ -315,7 +315,7 @@ class Deduper(object):
             duplicate_count += 1
             try:
                 self.remove_duplicate(dataset, retained_dataset)
-            except CkanApiFailureException, e:
+            except CkanApiFailureException as e:
                 log.error('Failed to remove dataset status_code=%s package=%r',
                           e.response.status_code, (dataset['id'], dataset['name']))
                 continue
