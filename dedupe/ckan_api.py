@@ -50,9 +50,14 @@ class CkanApiClient(object):
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key, dry_run=True):
+    def __init__(self, api_url, api_key, dry_run=True, api_read_url=None, reverse=False):
         self.api_url = api_url
+        if api_read_url is None:
+            self.api_read_url = api_url
+        else:
+            self.api_read_url = api_read_url
         self.dry_run = dry_run
+        self.reverse = reverse
         self.client = requests.Session()
         adapter = requests.adapters.HTTPAdapter(max_retries=3)
         self.client.mount('https://', adapter)
@@ -64,7 +69,7 @@ class CkanApiClient(object):
         if method == 'POST':
             url = '%s/api%s' % (self.api_url, path)
         else:
-            url = '%s/api%s' % ("https://catalog.data.gov", path)
+            url = '%s/api%s' % (self.api_read_url, path)
 
         if self.dry_run and method not in READ_ONLY_METHODS:
             raise DryRunException('Cannot call method in dry_run method=%s' % method)
@@ -114,7 +119,7 @@ class CkanApiClient(object):
 
         return results[0]
 
-    def get_duplicate_identifiers(self, organization_name, is_collection, reverse=False):
+    def get_duplicate_identifiers(self, organization_name, is_collection):
         filter_query = 'organization:"%s" AND type:dataset' % organization_name
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
@@ -129,8 +134,8 @@ class CkanApiClient(object):
         
         dupes = response.json()['result']['facets']['identifier']
         # If you want to run 2 scripts in parallel, run one version with normal sort
-        # and another with `reverse=True`
-        return sorted(dupes, reverse=reverse)
+        # and another with `--reverse` flag
+        return sorted(dupes, reverse=self.reverse)
             
 
     def get_dataset_count(self, organization_name, identifier, is_collection):

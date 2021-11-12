@@ -49,6 +49,8 @@ def run():
     parser.add_argument('--api-key', default=os.getenv('CKAN_API_KEY', None), help='Admin API key')
     parser.add_argument('--api-url', default='https://admin-catalog-next.data.gov',
                         help='The API base URL to query')
+    parser.add_argument('--api-read-url', default=None,
+                        help='The API base URL to query read-only info, for faster processing')
     parser.add_argument('--commit', action='store_true',
                         help='Treat the API as writeable and commit the changes.')
     parser.add_argument('--newest', action='store_true',
@@ -79,7 +81,11 @@ def run():
         log.info('Dry-run enabled')
 
     log.info('run_id=%s', args.run_id)
-    ckan_api = CkanApiClient(args.api_url, args.api_key, dry_run=dry_run)
+    ckan_api = CkanApiClient(args.api_url, 
+                             args.api_key,
+                             dry_run=dry_run,
+                             api_read_url=args.api_read_url,
+                             reverse=args.reverse)
     duplicate_package_log = DuplicatePackageLog(api_url=args.api_url, run_id=args.run_id)
     removed_package_log = RemovedPackageLog(run_id=args.run_id)
 
@@ -112,8 +118,7 @@ def run():
             duplicate_package_log,
             run_id=args.run_id,
             oldest=not args.newest,
-            update_name=args.update_name,
-            reverse=args.reverse)
+            update_name=args.update_name)
         deduper.dedupe()
 
 
