@@ -67,6 +67,9 @@ def run():
                         help='Include verbose log output.')
     parser.add_argument('organization_name', nargs='*',
                         help='Names of the organizations to deduplicate.')
+    parser.add_argument('--geospatial', default=False,
+                        help='Identifier type')
+            
 
     args = parser.parse_args()
 
@@ -80,12 +83,16 @@ def run():
     if dry_run:
         log.info('Dry-run enabled')
 
+    identifier_type = 'guid' if args.geospatial == 'True' else 'identifier'
+
     log.info('run_id=%s', args.run_id)
     ckan_api = CkanApiClient(args.api_url, 
                              args.api_key,
                              dry_run=dry_run,
+                             identifier_type=identifier_type,
                              api_read_url=args.api_read_url,
                              reverse=args.reverse)
+    
     duplicate_package_log = DuplicatePackageLog(api_url=args.api_url, run_id=args.run_id)
     removed_package_log = RemovedPackageLog(run_id=args.run_id)
 
@@ -118,7 +125,8 @@ def run():
             duplicate_package_log,
             run_id=args.run_id,
             oldest=not args.newest,
-            update_name=args.update_name)
+            update_name=args.update_name, 
+            identifier_type=identifier_type)
         deduper.dedupe()
 
 

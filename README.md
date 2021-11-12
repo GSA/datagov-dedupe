@@ -49,10 +49,10 @@ optional arguments:
   --reverse                     Reverse the order of unique identifiers the script runs
                                 through de-duping. Used when running twice in parallel.
   
-  --update-name      Update the name of the kept package to be the standard
-                     shortest name, whether that was the duplicate package
-                     name or the to be kept package name.
-  --verbose, -v      Include verbose log output.
+  --update-name                 Update the name of the kept package to be the standard
+                                shortest name, whether that was the duplicate package
+                                name or the to be kept package name.
+  --verbose, -v                 Include verbose log output.
 ```
 
 
