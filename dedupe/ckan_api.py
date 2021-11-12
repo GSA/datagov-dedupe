@@ -50,7 +50,7 @@ class CkanApiClient(object):
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key, dry_run=True):
+    def __init__(self, api_url, api_key, dry_run=True, identifier_type='identifier'):
         self.api_url = api_url
         self.dry_run = dry_run
         self.client = requests.Session()
@@ -59,6 +59,7 @@ class CkanApiClient(object):
         self.client.headers.update(Authorization=api_key)
         # Set the auth_tkt cookie to talk to admin API
         self.client.cookies = requests.cookies.cookiejar_from_dict(dict(auth_tkt='1'))
+        self.identifier_type = identifier_type
 
     def request(self, method, path, **kwargs):
         url = '%s/api%s' % (self.api_url, path)
@@ -85,8 +86,8 @@ class CkanApiClient(object):
 
     def get_dataset(self, organization_name, identifier, is_collection, sort_order='asc'):
         filter_query = \
-            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
-            (identifier, organization_name)
+            '%s:"%s" AND organization:"%s" AND type:dataset' % \
+            (self.identifier_type, identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -118,19 +119,19 @@ class CkanApiClient(object):
 
         response = self.get('/3/action/package_search', params={
             'fq': filter_query,
-            'facet.field': '["identifier"]',
+            'facet.field': '["'+self.identifier_type+'"]',
             'facet.limit': -1,
             'facet.mincount': 2,
             'rows': 0,
             })
 
         return \
-            response.json()['result']['search_facets']['identifier']['items']
+            response.json()['result']['search_facets'][self.identifier_type]['items']
 
     def get_dataset_count(self, organization_name, identifier, is_collection):
         filter_query = \
-            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
-            (identifier, organization_name)
+            '%s:"%s" AND organization:"%s" AND type:dataset' % \
+            (self.identifier_type, identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
@@ -159,8 +160,8 @@ class CkanApiClient(object):
     def get_datasets(self, organization_name, identifier, start=0, rows=1000,
                      is_collection=False):
         filter_query = \
-            'identifier:"%s" AND organization:"%s" AND type:dataset' % \
-            (identifier, organization_name)
+            '%s:"%s" AND organization:"%s" AND type:dataset' % \
+            (self.identifier_type, identifier, organization_name)
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 

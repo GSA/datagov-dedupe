@@ -34,7 +34,8 @@ class Deduper(object):
                  collection_package_log=None,
                  run_id=None,
                  oldest=True,
-                 update_name=False):
+                 update_name=False,
+                 identifier_type='identifier'):
         self.organization_name = organization_name
         self.ckan_api = ckan_api
         self.log = ContextLoggerAdapter(module_log, {'organization': organization_name})
@@ -44,6 +45,7 @@ class Deduper(object):
         self.stopped = False
         self.oldest = oldest
         self.update_name = update_name
+        self.identifier_type = identifier_type
 
         if not run_id:
             run_id = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -76,7 +78,7 @@ class Deduper(object):
             try:
                 identifiers = self.ckan_api.get_duplicate_identifiers(self.organization_name,
                                                                       is_collection)
-            except CkanApiFailureException, exc:
+            except CkanApiFailureException as exc:
                 self.log.error('Failed to fetch %s dataset identifiers for organization', label)
                 self.log.exception(exc)
                 # continue onto the next organization
@@ -94,18 +96,18 @@ class Deduper(object):
                 if self.stopped:
                     raise DeduperStopException()
 
-                self.log.info('Deduplicating identifier=%s progress=%r',
-                              identifier, (next(count), len(identifiers)))
+                self.log.info('Deduplicating %s=%s progress=%r',
+                              self.identifier_type, identifier, (next(count), len(identifiers)))
                 try:
                     duplicate_count += self.dedupe_identifier(identifier, is_collection)
                 except CkanApiFailureException:
-                    self.log.error('Failed to dedupe identifier=%s', identifier)
+                    self.log.error('Failed to dedupe %s=%s', self.identifier_type, identifier)
                     # Move on to next identifier
                     continue
                 except CkanApiCountException:
                     self.log.error('Got an invalid count, this may not be a duplicate or there '
                                    'could be inconsistencies between db and solr. Try running the '
-                                   'db_solr_sync job. identifier=%s', identifier)
+                                   'db_solr_sync job. %s=%s', self.identifier_type, identifier)
                     # Move on to next identifier
                     continue
 
@@ -243,7 +245,7 @@ class Deduper(object):
 
         log = ContextLoggerAdapter(
             module_log,
-            {'organization': self.organization_name, 'identifier': identifier},
+            {'organization': self.organization_name, self.identifier_type: identifier},
             )
 
         log.debug('Fetching number of datasets for unique identifier')
@@ -257,7 +259,8 @@ class Deduper(object):
 
         sort_order = 'asc' if self.oldest else 'desc'
         # We want to keep the oldest dataset
-        self.log.debug('Fetching %s dataset for identifier=%s', 'oldest' if self.oldest else 'newest', identifier)
+        self.log.debug('Fetching %s dataset for %s=%s', 'oldest' if self.oldest else 'newest', 
+                        self.identifier_type, identifier)
         retained_dataset = self.ckan_api.get_dataset(self.organization_name,
                                                      identifier,
                                                      is_collection,
@@ -283,8 +286,8 @@ class Deduper(object):
             start = 0
             while start < total:
                 log.debug(
-                    'Batch fetching datasets for identifier offset=%d rows=%d total=%d',
-                    start, rows, total)
+                    'Batch fetching datasets for %s offset=%d rows=%d total=%d',
+                    self.identifier_type, start, rows, total)
                 datasets = self.ckan_api.get_datasets(self.organization_name, identifier, start, rows, is_collection)
                 if len(datasets) < 1:
                     log.warning('Got zero datasets from API offset=%d total=%d', start, total)
@@ -312,7 +315,7 @@ class Deduper(object):
             duplicate_count += 1
             try:
                 self.remove_duplicate(dataset, retained_dataset)
-            except CkanApiFailureException, e:
+            except CkanApiFailureException as e:
                 log.error('Failed to remove dataset status_code=%s package=%r',
                           e.response.status_code, (dataset['id'], dataset['name']))
                 continue
