@@ -43,6 +43,8 @@ optional arguments:
                      script.
   --newest           Keep the newest dataset and remove older ones 
                      (by default the oldest is kept)
+  --geospatial       This flag will allow us to toggle between identifier and guid;
+                     it is defaulted to False which will use identifier.
   --update-name      Update the name of the kept package to be the standard
                      shortest name, whether that was the duplicate package
                      name or the to be kept package name.
