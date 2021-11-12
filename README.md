@@ -48,7 +48,8 @@ optional arguments:
                                 (by default the oldest is kept)
   --reverse                     Reverse the order of unique identifiers the script runs
                                 through de-duping. Used when running twice in parallel.
-  
+  --geospatial                  This flag will allow us to toggle between identifier and guid;
+                                it is defaulted to identifier.
   --update-name                 Update the name of the kept package to be the standard
                                 shortest name, whether that was the duplicate package
                                 name or the to be kept package name.

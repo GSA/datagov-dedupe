@@ -67,8 +67,8 @@ def run():
                         help='Include verbose log output.')
     parser.add_argument('organization_name', nargs='*',
                         help='Names of the organizations to deduplicate.')
-    parser.add_argument('--geospatial', default=False,
-                        help='Identifier type')
+    parser.add_argument('--geospatial', action='store_true',
+                        help='If the organization has geospatial metadata that should be de-duped')
             
 
     args = parser.parse_args()
@@ -83,7 +83,7 @@ def run():
     if dry_run:
         log.info('Dry-run enabled')
 
-    identifier_type = 'guid' if args.geospatial == 'True' else 'identifier'
+    identifier_type = 'guid' if args.geospatial else 'identifier'
 
     log.info('run_id=%s', args.run_id)
     ckan_api = CkanApiClient(args.api_url, 
