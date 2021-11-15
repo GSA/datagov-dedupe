@@ -34,21 +34,26 @@ positional arguments:
   organization_name  Names of the organizations to deduplicate.
 
 optional arguments:
-  -h, --help         show this help message and exit
-  --api-key API_KEY  Admin API key
-  --api-url API_URL  The API base URL to query
-  --commit           Treat the API as writeable and commit the changes.
-  --debug            Include debug output from urllib3.
-  --run-id RUN_ID    An identifier for a single run of the deduplication
-                     script.
-  --newest           Keep the newest dataset and remove older ones 
-                     (by default the oldest is kept)
-  --geospatial       This flag will allow us to toggle between identifier and guid;
-                     it is defaulted to False which will use identifier.
-  --update-name      Update the name of the kept package to be the standard
-                     shortest name, whether that was the duplicate package
-                     name or the to be kept package name.
-  --verbose, -v      Include verbose log output.
+  -h, --help                    show this help message and exit
+  --api-key API_KEY             Admin API key
+  --api-url API_URL             The API base URL to query
+  --api-read-url API_READ_URL   The API URL to use for read-only queries, to limit
+                                the load on the read-write URL. Defaults to the
+                                api-url, which defaults to read-write catalog.
+  --commit                      Treat the API as writeable and commit the changes.
+  --debug                       Include debug output from urllib3.
+  --run-id RUN_ID               An identifier for a single run of the deduplication
+                                script.
+  --newest                      Keep the newest dataset and remove older ones 
+                                (by default the oldest is kept)
+  --reverse                     Reverse the order of unique identifiers the script runs
+                                through de-duping. Used when running twice in parallel.
+  --geospatial                  This flag will allow us to toggle between identifier and guid;
+                                it is defaulted to identifier.
+  --update-name                 Update the name of the kept package to be the standard
+                                shortest name, whether that was the duplicate package
+                                name or the to be kept package name.
+  --verbose, -v                 Include verbose log output.
 ```
 
 

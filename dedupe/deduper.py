@@ -92,7 +92,7 @@ class Deduper(object):
             count = itertools.count(start=1)
             # Work with the identifer name, since that's all we need and it's a
             # little cleaner.
-            for identifier in (i['name'] for i in identifiers):
+            for identifier in identifiers:
                 if self.stopped:
                     raise DeduperStopException()
 
