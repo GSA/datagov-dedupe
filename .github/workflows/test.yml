@@ -1,0 +1,17 @@
+---
+name: commit
+
+on:
+  push:
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: build
+        run: pipenv sync
+      - name: test
+        run: pipenv run python setup.py test
