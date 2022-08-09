@@ -47,7 +47,7 @@ def run():
                                      'data.gov. By default, duplicates are detected but not '
                                      'actually removed.')
     parser.add_argument('--api-key', default=os.getenv('CKAN_API_KEY', None), help='Admin API key')
-    parser.add_argument('--api-url', default='https://admin-catalog-next.data.gov',
+    parser.add_argument('--api-url', default='https://catalog-prod-admin-datagov.app.cloud.gov',
                         help='The API base URL to query')
     parser.add_argument('--api-read-url', default=None,
                         help='The API base URL to query read-only info, for faster processing')
