@@ -15,9 +15,5 @@ jobs:
         run: pip install pipenv
       - name: build
         run: pipenv install --dev
-      - name: check
-        run: |
-          pipenv run python --version
-          pipenv run python 
       - name: test
         run: pipenv run python setup.py test
