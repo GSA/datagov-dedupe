@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Install pipenv
+        run: pip install pipenv
       - name: build
         run: pipenv sync
       - name: test
