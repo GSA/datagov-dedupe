@@ -7,7 +7,7 @@ from datetime import datetime
 import itertools
 import logging
 
-from .ckan_api import CkanApiFailureException, CkanApiCountException
+from .ckan_api import CkanApiFailureException, CkanApiCountException, CkanApiStatusException
 from . import util
 
 module_log = logging.getLogger(__name__)
@@ -149,7 +149,11 @@ class Deduper(object):
 
         self.update_collection_datasets(duplicate_package, retained_package)
 
-        self.ckan_api.remove_package(duplicate_package['id'])
+        try:
+            self.ckan_api.remove_package(duplicate_package['id'])
+        except CkanApiStatusException:
+             self.log.warning('Failed to remove package, skipping: %r',
+                      (duplicate_package['id'], duplicate_package['name']))
 
         if(len(duplicate_package['name']) < len(retained_package['name'])
             and self.update_name ):

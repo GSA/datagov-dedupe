@@ -1,0 +1,187 @@
+---
+name: Run De-dupe
+
+on:
+  workflow_dispatch:
+    inputs:
+      geospatial:
+        type: boolean
+        description: Whether organization has datajson duplicates or geospatial
+        required: true
+      organization:
+        description: 'Organization'
+        required: true
+        default: 'doi-gov' 
+        type: choice
+        options:
+        - allegheny-county-city-of-pittsburgh-western-pa-regional-data-center
+        - alcc-fws-gov
+        - arlington-county
+        - usace-army-mil
+        - board-of-governors-of-the-federal-reserve-system
+        - cdph-ca-gov
+        - austin-utexas-edu
+        - centers-for-disease-control-and-prevention
+        - city-and-county-of-durham-north-carolina
+        - city-of-austin
+        - city-of-baltimore
+        - city-of-baton-rouge
+        - city-of-bloomington
+        - city-of-boise
+        - city-of-charlotte
+        - city-of-chesapeake
+        - city-of-chicago
+        - city-of-ferndale-michigan
+        - city-of-hartford
+        - city-of-honolulu
+        - city-of-jackson-mississippi
+        - city-of-los-angeles
+        - city-of-new-orleans
+        - city-of-new-york
+        - orem-org
+        - city-of-philadelphia
+        - city-of-providence
+        - city-of-san-francisco
+        - city-of-santa-rosa
+        - city-of-seattle
+        - city-of-sioux-falls
+        - city-of-somerville
+        - city-of-tempe
+        - cdatribe-nsn-gov
+        - cfpb-gov
+        - cook-county-of-illinois
+        - usda-gov
+        - doc-gov
+        - dod-gov
+        - ed-gov
+        - doe-gov
+        - dhs-gov
+        - hud-gov
+        - doj-gov
+        - dol-gov
+        - state-gov
+        - doi-gov
+        - treasury-gov
+        - dot-gov
+        - va-gov
+        - edac-unm-edu
+        - eac-gov
+        - eop-gov
+        - exim-gov
+        - fairfax-county-virginia
+        - fsa-usda-gov
+        - fcc-gov
+        - fdic-gov
+        - fec-gov
+        - fema-gov
+        - fgdc-gov
+        - fhfa-gov
+        - federal-laboratory-consortium
+        - federal-retirement-thrift-investment-board
+        - federal-trade-commission
+        - florida-department-of-environmental-protection
+        - gsa-gov
+        - coa-gatech-edu
+        - gulf-coast-ecosystem-restoration-council
+        - isu-edu
+        - imls-gov
+        - ibwc-gov
+        - iastate-edu
+        - kgs-ku-edu
+        - king-county-washington
+        - lake-county-illinois
+        - legal-services-corporation
+        - library-of-congress
+        - loudoun-county-virginia
+        - lagic-lsu-edu
+        - louisville-metro-government
+        - mspb-gov
+        - metc-state-mn-us
+        - mcc-gov
+        - dnr-state-mn-us
+        - missouri-edu
+        - montgomery-county-of-maryland
+        - municipality-of-anchorage
+        - nasa-gov
+        - nara-gov
+        - national-credit-union-administration
+        - neh-gov
+        - nga-mil
+        - national-institute-of-standards-and-technology
+        - noaa-gov
+        - nsf-gov
+        - ntsb-gov
+        - nitrd-gov
+        - nsgic-education-gis-inventory
+        - nsgic-local-govt-gis-inventory
+        - nsgic-non-profit-gis-inventory
+        - nsgic-private-gis-inventory
+        - nsgic-regional-gis-inventory
+        - nsgic-state-gis-inventory
+        - nsgic-tribal-gis-inventory
+        - nrc-gov
+        - office-of-management-and-budget
+        - onhir-gov
+        - opm-gov
+        - opentopography
+        - oregonstate-edu
+        - pennsylvania-geospatial-data-clearinghouse
+        - pbgc-gov
+        - rrb-gov
+        - sandbox-organization
+        - cdip-ucsd-edu
+        - sec-gov
+        - sba-gov
+        - ssa-gov
+        - state-of-alaska
+        - arkansas-gov
+        - ca-gov
+        - state-of-connecticut
+        - state-of-hawaii
+        - state-of-illinois
+        - state-of-iowa
+        - state-of-maryland
+        - state-mn-us
+        - state-of-missouri
+        - state-of-new-york
+        - nc-gov
+        - nd-gov
+        - state-of-oklahoma
+        - state-of-oregon
+        - state-of-washington
+        - town-of-cary-north-carolina
+        - town-of-chapel-hill-north-carolina
+        - un-org
+        - uidaho-edu
+        - u-washington-edu
+        - usaid-gov
+        - census-gov
+        - cpsc-gov
+        - hhs-gov
+        - u-s-department-of-labor-bureau-of-labor-statistics
+        - epa-gov
+        - eeoc-gov
+        - usgs-gov
+        - usitc-gov
+        - vcgi-org
+        - wake-county
+        - wwhgd-nga-org
+        - wvu-edu
+
+jobs:
+  dry_run_dedupe:
+    name: Run de-dupe
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Install pipenv
+        run: pip install pipenv
+      - name: build
+        run: pipenv sync
+      - name: run geospatial
+        if: ${{ inputs.geospatial }}
+        run: pipenv run python duplicates-identifier-api.py --geospatial ${{ inputs.organization }}
+      - name: run datajson
+        if: ${{ ! inputs.geospatial }}
+        run: pipenv run python duplicates-identifier-api.py ${{ inputs.organization }}
