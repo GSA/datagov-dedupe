@@ -123,6 +123,12 @@ class CkanApiClient(object):
 
         return results[0]
 
+    def check_dataset(self, name):
+        response = self.get('/action/package_show', params={
+            'id': name,
+            })
+        return response.json()['result']
+
     def get_duplicate_identifiers(self, organization_name, is_collection, full_count=False):
         filter_query = 'organization:"%s" AND type:dataset' % organization_name
         if is_collection:
@@ -190,6 +196,18 @@ class CkanApiClient(object):
         })
 
         return response.json()['result']['results']
+
+    def get_all_datasets(self, start=0, rows=1000,
+                     is_collection=False):
+        filter_query = 'type:dataset AND organization:doi-gov'
+
+        response = self.get('/action/package_search', params={
+            'fq': filter_query,
+            'start': start,
+            'rows': rows,
+            })
+
+        return response.json()['result']
 
     def get_organizations(self):
         response = self.get('/action/organization_list')
