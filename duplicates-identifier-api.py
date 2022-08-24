@@ -13,9 +13,17 @@ from dedupe.audit import DuplicatePackageLog, RemovedPackageLog
 from dedupe.ckan_api import CkanApiClient
 from dedupe.deduper import Deduper
 
-logging.basicConfig(stream=sys.stdout, format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
+# logging.basicConfig(stream=sys.stdout, format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
+logFormatter = logging.Formatter("%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 log = logging.getLogger('dedupe')
+fileHandler = logging.FileHandler("output.log")
+fileHandler.setFormatter(logFormatter)
+log.addHandler(fileHandler)
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+log.addHandler(consoleHandler)
 log.setLevel(logging.INFO)
+
 
 # Define module-level context for signal handling
 stopped = False
