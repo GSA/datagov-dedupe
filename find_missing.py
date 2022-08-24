@@ -5,8 +5,14 @@ import json
 import sys
 import time
 
-logging.basicConfig(stream=sys.stdout, format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
+logFormatter = logging.Formatter("%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 log = logging.getLogger('dedupe')
+fileHandler = logging.FileHandler("output.log")
+fileHandler.setFormatter(logFormatter)
+log.addHandler(fileHandler)
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+log.addHandler(consoleHandler)
 log.setLevel(logging.INFO)
 
 from dedupe.ckan_api import CkanApiClient, CkanApiStatusException
@@ -32,32 +38,30 @@ def run():
     broken_datasets = []
     start = 0
     rows = 1000
+    ckan_datasets = ckan_api.get_duplicate_identifiers("doi-gov", False)
     # Get all datasets
-    while True:
-        ckan_datasets = ckan_api.get_all_datasets(start=start, rows=rows)
-        time.sleep(1)
-        datasets = datasets + ckan_datasets.get('results')
-        if ckan_datasets.get('count') < start + rows:
-            log.debug(f"Got all datasets: {ckan_datasets.get('count')}")
-            break
-        log.debug(f"Got datasets: {start + rows}")
-        start = start + rows
-    
-    for d in datasets:
-        # Check if dataset page works/exists
-        try:
-            time.sleep(1)
-            ckan_api.check_dataset(d.get('id'))
-            log.debug(f"{d.get('name')} checks out")
-        except CkanApiStatusException:
-            log.error(f"{d.get('name')} does not exist")
-            broken_datasets.append(d)
-
+    # while True:
+        
+        # time.sleep(1)
+        # datasets = datasets + ckan_datasets.get('results')
+        # if ckan_datasets.get('count') < start + rows:
+        #     log.debug(f"Got all datasets: {ckan_datasets.get('count')}")
+        #     break
+        # log.debug(f"Got datasets: {start + rows}")
+        # start = start + rows
     with open("broken_datasets.jsonld", "w") as output:
-        for d in broken_datasets:
-            output.write(json.dumps(d) + ("\n"))
-
-
+        for d in ckan_datasets:
+            # Check if dataset page works/exists
+            dataset_dupes = ckan_api.get_datasets("doi-gov", d)
+            for dd in dataset_dupes:
+                try:
+                    # time.sleep(1)
+                    ckan_api.check_dataset(dd.get('id'))
+                    log.debug(f"{dd.get('name')} checks out")
+                except CkanApiStatusException:
+                    log.error(f"{dd.get('name')} does not exist")
+                    broken_datasets.append(dd)
+                    output.write(json.dumps(dd) + ("\n"))
 
 
 if __name__ == "__main__":
