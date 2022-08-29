@@ -9,6 +9,8 @@ Install the dependencies.
 
     $ pipenv sync
 
+### De-duplicate
+
 Deduplicate packages for a specific organization.
 
     $ pipenv run python duplicates-identifier-api.py [organization-name]
@@ -56,6 +58,15 @@ optional arguments:
   --verbose, -v                 Include verbose log output.
 ```
 
+### Check for duplicates
+In order to evaluate how many duplicates exist across organizations, you can use the
+`duplicate-packages-organization.py` script:
+
+    $ pipenv run python duplicate-packages-organization.py
+
+See `--help` for latest options, but this script is much lighter and takes less than a minute to run.
+
+The output gives you information about each org, and will show duplication problems system wide.
 
 ## Development
 
