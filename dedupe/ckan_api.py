@@ -121,7 +121,7 @@ class CkanApiClient(object):
 
         return results[0]
 
-    def get_duplicate_identifiers(self, organization_name, is_collection):
+    def get_duplicate_identifiers(self, organization_name, is_collection, full_count=False):
         filter_query = 'organization:"%s" AND type:dataset' % organization_name
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
@@ -135,6 +135,11 @@ class CkanApiClient(object):
             })
         
         dupes = response.json()['result']['facets'][self.identifier_type]
+
+        # If we want not just the identifiers, but also the counts
+        if full_count:
+            return dupes
+
         # If you want to run 2 scripts in parallel, run one version with normal sort
         # and another with `--reverse` flag
         return sorted(dupes, reverse=self.reverse)
@@ -187,6 +192,11 @@ class CkanApiClient(object):
     def get_organizations(self):
         response = self.get('/action/organization_list')
         return response.json()['result']
+
+    def get_organization_count(self, organization_name):
+
+        response = self.get('/action/package_search?q=organization:%s&rows=0' % organization_name)
+        return response.json()['result']['count']
 
     def remove_package(self, package_id):
         if self.dry_run:
