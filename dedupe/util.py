@@ -2,6 +2,7 @@
 Utilities for working with CKAN packages.
 '''
 
+
 def get_package_extra(package, key, default=None):
     '''
     Returns the value of the named key from the extras list.

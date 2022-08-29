@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 import argparse
 from datetime import datetime
 import itertools
@@ -7,7 +8,6 @@ import logging.config
 import os
 import signal
 import sys
-import time
 
 from dedupe.audit import DuplicatePackageLog, RemovedPackageLog
 from dedupe.ckan_api import CkanApiClient
@@ -58,7 +58,8 @@ def run():
     parser.add_argument('--reverse', action='store_true',
                         help='Reverse the order of ids to parse (for running with another script in parallel)')
     parser.add_argument('--update-name', action='store_true',
-                        help='Update the name of the kept package to be the standard shortest name, whether that was the duplicate package name or the to be kept package name.')
+                        help=('Update the name of the kept package to be the standard shortest name, '
+                              'whether that was the duplicate package name or the to be kept package name.'))
     parser.add_argument('--debug', action='store_true',
                         help='Include debug output from urllib3.')
     parser.add_argument('--run-id', default=datetime.now().strftime('%Y%m%d%H%M%S'),
@@ -69,7 +70,6 @@ def run():
                         help='Names of the organizations to deduplicate.')
     parser.add_argument('--geospatial', action='store_true',
                         help='If the organization has geospatial metadata that should be de-duped')
-            
 
     args = parser.parse_args()
 
@@ -86,13 +86,13 @@ def run():
     identifier_type = 'guid' if args.geospatial else 'identifier'
 
     log.info('run_id=%s', args.run_id)
-    ckan_api = CkanApiClient(args.api_url, 
+    ckan_api = CkanApiClient(args.api_url,
                              args.api_key,
                              dry_run=dry_run,
                              identifier_type=identifier_type,
                              api_read_url=args.api_read_url,
                              reverse=args.reverse)
-    
+
     duplicate_package_log = DuplicatePackageLog(api_url=args.api_url, run_id=args.run_id)
     removed_package_log = RemovedPackageLog(run_id=args.run_id)
 
@@ -125,7 +125,7 @@ def run():
             duplicate_package_log,
             run_id=args.run_id,
             oldest=not args.newest,
-            update_name=args.update_name, 
+            update_name=args.update_name,
             identifier_type=identifier_type)
         deduper.dedupe()
 

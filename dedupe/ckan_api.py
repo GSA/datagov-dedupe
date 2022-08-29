@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 import logging
 
 import requests
@@ -29,6 +30,7 @@ class CkanApiStatusException(CkanApiException):
     '''
     pass
 
+
 class CkanApiCountException(CkanApiException):
     '''
     CKAN API (and solr) returned a non-zero count, but no data. Could this be
@@ -50,7 +52,7 @@ class CkanApiClient(object):
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key, dry_run=True, 
+    def __init__(self, api_url, api_key, dry_run=True,
                  identifier_type='identifier', api_read_url=None, reverse=False):
         self.api_url = api_url
         if api_read_url is None:
@@ -105,7 +107,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'sort': 'metadata_created ' + sort_order,
             'rows': rows,
-            })
+        })
 
         results = response.json()['result']['results']
 
@@ -128,12 +130,12 @@ class CkanApiClient(object):
 
         response = self.get('/3/action/package_search', params={
             'fq': filter_query,
-            'facet.field': '["'+self.identifier_type+'"]',
+            'facet.field': '["' + self.identifier_type + '"]',
             'facet.limit': -1,
             'facet.mincount': 2,
             'rows': 0,
-            })
-        
+        })
+
         dupes = response.json()['result']['facets'][self.identifier_type]
 
         # If we want not just the identifiers, but also the counts
@@ -155,7 +157,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'sort': 'metadata_created desc',
             'rows': 0,
-            })
+        })
 
         return response.json()['result']['count']
 
@@ -166,7 +168,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'sort': 'metadata_created desc',
             'rows': 0,
-            })
+        })
 
         search_result = response.json()['result']
         if search_result['count'] > 0:
@@ -185,7 +187,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'start': start,
             'rows': rows,
-            })
+        })
 
         return response.json()['result']['results']
 

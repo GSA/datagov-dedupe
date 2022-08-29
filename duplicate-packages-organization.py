@@ -1,17 +1,16 @@
 
+from __future__ import absolute_import
 import argparse
 import csv
 from datetime import datetime
 import itertools
 import logging
 import logging.config
-import math
 import os
-import signal
 import sys
-import time
 
 from dedupe.ckan_api import CkanApiClient
+
 
 class OrgDuplicateLog(object):
     # Order matters here for the report
@@ -31,11 +30,10 @@ class OrgDuplicateLog(object):
             filename = 'org-duplicates-%s.csv' % run_id
 
         log.info('Opening duplicate package report for writing filename=%s', filename)
-        self.__f = open(filename, mode='wb')
+        self.__f = open(filename, mode='w')
         self.log = csv.DictWriter(self.__f,
                                   fieldnames=OrgDuplicateLog.fieldnames)
         self.log.writeheader()
-
 
     def add(self, org_results):
         log.debug('Recording organization counts=%s', org_results.get('organization_name'))
@@ -95,7 +93,6 @@ def run():
                         help='Include verbose log output.')
     parser.add_argument('organization_name', nargs='*',
                         help='Names of the organizations to deduplicate.')
-            
 
     args = parser.parse_args()
 
@@ -109,9 +106,8 @@ def run():
 
     ckan_api = CkanApiClient(args.api_url, "None", identifier_type='identifier')
     ckan_geo_api = CkanApiClient(args.api_url, "None", identifier_type='guid')
-    
-    org_log = OrgDuplicateLog(run_id=args.run_id)
 
+    org_log = OrgDuplicateLog(run_id=args.run_id)
 
     log.info('Using api=%s', args.api_url)
 
@@ -133,13 +129,13 @@ def run():
 
         json_duplicates = ckan_api.get_duplicate_identifiers(organization, False, full_count=True)
         geo_duplicates = ckan_geo_api.get_duplicate_identifiers(organization, False, full_count=True)
-        duplicates = json_duplicates.copy()
-        duplicates.update(geo_duplicates)
-        # duplicates = {**json_duplicates, **geo_duplicates}
+        # duplicates = json_duplicates.copy()
+        # duplicates.update(geo_duplicates)
+        duplicates = {**json_duplicates, **geo_duplicates}
         count = 0
-        
+
         for dupe_cnt in duplicates.values():
-            count += dupe_cnt-1
+            count += dupe_cnt - 1
 
         org_overview = {
             "title": "",
@@ -147,7 +143,7 @@ def run():
             "number_datasets_duplicated": len(duplicates),
             "total_duplicate_count": count,
             "total_datasets": total,
-            "percent_duplicate": round(float(count)/(total if total > 0 else 1)*100, 2)
+            "percent_duplicate": round(float(count) / (total if total > 0 else 1) * 100, 2)
         }
 
         org_log.add(org_overview)

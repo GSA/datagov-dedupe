@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 from setuptools import setup, find_packages
 
 setup(name='datagov-dedupe',
@@ -9,4 +10,4 @@ setup(name='datagov-dedupe',
       url='https://github.com/GSA/datagov-dedupe',
       packages=find_packages(),
       test_suite='dedupe.tests',
-     )
+      )
