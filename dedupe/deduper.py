@@ -3,6 +3,7 @@ Duper looks for duplicate packages within a single organization, updates the
 retained package and removes the rest.
 '''
 
+from __future__ import absolute_import
 from datetime import datetime
 import itertools
 import logging
@@ -13,6 +14,7 @@ from . import util
 module_log = logging.getLogger(__name__)
 
 PACKAGE_NAME_MAX_LENGTH = 100
+
 
 class DeduperStopException(Exception):
     '''Raised when the deduper is asked to stop processing and gracefully exit.'''
@@ -116,7 +118,6 @@ class Deduper(object):
                           duplicate_count)
             return duplicate_count
 
-
         # Total deduplicated datasets for both non-collection and collection datasets
         total_duplicate_count = 0
 
@@ -152,16 +153,15 @@ class Deduper(object):
         try:
             self.ckan_api.remove_package(duplicate_package['id'])
         except CkanApiStatusException:
-             self.log.warning('Failed to remove package, skipping: %r',
-                      (duplicate_package['id'], duplicate_package['name']))
+            self.log.warning('Failed to remove package, skipping: %r',
+                             (duplicate_package['id'], duplicate_package['name']))
 
-        if(len(duplicate_package['name']) < len(retained_package['name'])
-            and self.update_name ):
+        if (len(duplicate_package['name']) < len(retained_package['name']) and self.update_name):
             # If the package to be retained has extra random character at
             #  the end of the name, we want to rename it to the "standard"
-            #  name to keep the typical URL. 
+            #  name to keep the typical URL.
             self.log.info('Renaming kept package from %s to %s',
-                      retained_package['name'], duplicate_package['name'])
+                          retained_package['name'], duplicate_package['name'])
             retained_package['name'] = duplicate_package['name']
             self.ckan_api.update_package(retained_package)
             if self.removed_package_log:
@@ -207,7 +207,6 @@ class Deduper(object):
                        (retained_package['id'], retained_package['name']))
         self.ckan_api.update_package(retained_package)
 
-
     def commit_retained_package(self, retained_package):
         '''
         Unmarks the package for deduplication and commits any data changes.
@@ -250,7 +249,7 @@ class Deduper(object):
         log = ContextLoggerAdapter(
             module_log,
             {'organization': self.organization_name, self.identifier_type: identifier},
-            )
+        )
 
         log.debug('Fetching number of datasets for unique identifier')
         dataset_count = self.ckan_api.get_dataset_count(self.organization_name, identifier, is_collection)
@@ -263,8 +262,8 @@ class Deduper(object):
 
         sort_order = 'asc' if self.oldest else 'desc'
         # We want to keep the oldest dataset
-        self.log.debug('Fetching %s dataset for %s=%s', 'oldest' if self.oldest else 'newest', 
-                        self.identifier_type, identifier)
+        self.log.debug('Fetching %s dataset for %s=%s', 'oldest' if self.oldest else 'newest',
+                       self.identifier_type, identifier)
         retained_dataset = self.ckan_api.get_dataset(self.organization_name,
                                                      identifier,
                                                      is_collection,
@@ -330,7 +329,6 @@ class Deduper(object):
         self.commit_retained_package(retained_dataset)
 
         return duplicate_count
-
 
     def stop(self):
         '''

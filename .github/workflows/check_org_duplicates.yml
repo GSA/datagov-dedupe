@@ -1,0 +1,24 @@
+---
+name: Check org duplicates
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check_org_duplicates:
+    name: Check Org Duplicates
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Install pipenv
+        run: pip install pipenv
+      - name: build
+        run: pipenv sync
+      - name: run check
+        run: pipenv run python duplicate-packages-organization.py --run-id=test
+      - name: save file
+        uses: actions/upload-artifact@v2
+        with:
+          name: org_overview
+          path: org-duplicates-test.csv

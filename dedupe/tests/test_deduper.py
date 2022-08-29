@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import unittest
 
 import mock
@@ -15,7 +16,12 @@ class TestDeduper(unittest.TestCase):
         self.collection_package_log = mock.Mock(RemovedPackageLog)
 
         self.ckan_api = mock.Mock(CkanApiClient)
-        self.deduper = Deduper('test-org', self.ckan_api, removed_package_log=self.removed_package_log, duplicate_package_log=self.duplicate_package_log, collection_package_log=self.collection_package_log, update_name=True)
+        self.deduper = Deduper('test-org',
+                               self.ckan_api,
+                               removed_package_log=self.removed_package_log,
+                               duplicate_package_log=self.duplicate_package_log,
+                               collection_package_log=self.collection_package_log,
+                               update_name=True)
 
     def test_remove_duplicate(self):
         self.ckan_api.get_datasets_in_collection.return_value = [{
