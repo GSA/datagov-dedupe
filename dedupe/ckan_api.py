@@ -209,6 +209,18 @@ class CkanApiClient(object):
 
         return response.json()['result']
 
+    def get_all_datasets(self, start=0, rows=1000,
+                     is_collection=False):
+        filter_query = 'type:dataset AND organization:doi-gov'
+
+        response = self.get('/action/package_search', params={
+            'fq': filter_query,
+            'start': start,
+            'rows': rows,
+            })
+
+        return response.json()['result']
+
     def get_organizations(self):
         response = self.get('/action/organization_list')
         return response.json()['result']
