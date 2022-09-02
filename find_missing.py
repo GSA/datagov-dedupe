@@ -64,7 +64,7 @@ def run():
                 ckan_api.check_dataset(d.get('id'))
                 log.debug(f"{d.get('name')} checks out")
             except CkanApiStatusException:
-                log.error(f"{dd.get('name')} does not exist")
+                log.error(f"{d.get('name')} does not exist")
                 broken_datasets.append(d)
                 output.write(json.dumps(d) + ("\n"))
 
