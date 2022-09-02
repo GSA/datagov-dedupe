@@ -2,3 +2,6 @@
 *.egg-info
 duplicate-packages-*.csv
 removed-packages-*.log
+org-duplicates-*.csv
+*.bak
+output.log

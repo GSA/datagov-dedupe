@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 import logging
 
 import requests
@@ -29,6 +30,7 @@ class CkanApiStatusException(CkanApiException):
     '''
     pass
 
+
 class CkanApiCountException(CkanApiException):
     '''
     CKAN API (and solr) returned a non-zero count, but no data. Could this be
@@ -50,7 +52,7 @@ class CkanApiClient(object):
     Represents a client to query and submit requests to the CKAN API.
     '''
 
-    def __init__(self, api_url, api_key, dry_run=True, 
+    def __init__(self, api_url, api_key, dry_run=True,
                  identifier_type='identifier', api_read_url=None, reverse=False):
         self.api_url = api_url
         if api_read_url is None:
@@ -105,7 +107,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'sort': 'metadata_created ' + sort_order,
             'rows': rows,
-            })
+        })
 
         results = response.json()['result']['results']
 
@@ -121,26 +123,32 @@ class CkanApiClient(object):
 
         return results[0]
 
+
     def check_dataset(self, name):
         response = self.get('/action/package_show', params={
             'id': name,
             })
         return response.json()['result']
 
-    def get_duplicate_identifiers(self, organization_name, is_collection):
+    def get_duplicate_identifiers(self, organization_name, is_collection, full_count=False):
         filter_query = 'organization:"%s" AND type:dataset' % organization_name
         if is_collection:
             filter_query = '%s AND collection_package_id:*' % filter_query
 
         response = self.get('/3/action/package_search', params={
             'fq': filter_query,
-            'facet.field': '["'+self.identifier_type+'"]',
+            'facet.field': '["' + self.identifier_type + '"]',
             'facet.limit': -1,
             'facet.mincount': 2,
             'rows': 0,
-            })
-        
+        })
+
         dupes = response.json()['result']['facets'][self.identifier_type]
+
+        # If we want not just the identifiers, but also the counts
+        if full_count:
+            return dupes
+
         # If you want to run 2 scripts in parallel, run one version with normal sort
         # and another with `--reverse` flag
         return sorted(dupes, reverse=self.reverse)
@@ -156,7 +164,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'sort': 'metadata_created desc',
             'rows': 0,
-            })
+        })
 
         return response.json()['result']['count']
 
@@ -167,7 +175,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'sort': 'metadata_created desc',
             'rows': 0,
-            })
+        })
 
         search_result = response.json()['result']
         if search_result['count'] > 0:
@@ -186,7 +194,7 @@ class CkanApiClient(object):
             'fq': filter_query,
             'start': start,
             'rows': rows,
-            })
+        })
 
         return response.json()['result']['results']
 
@@ -205,6 +213,11 @@ class CkanApiClient(object):
     def get_organizations(self):
         response = self.get('/action/organization_list')
         return response.json()['result']
+
+    def get_organization_count(self, organization_name):
+
+        response = self.get('/action/package_search?q=organization:%s&rows=0' % organization_name)
+        return response.json()['result']['count']
 
     def remove_package(self, package_id):
         if self.dry_run:
