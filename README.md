@@ -68,6 +68,15 @@ See `--help` for latest options, but this script is much lighter and takes less 
 
 The output gives you information about each org, and will show duplication problems system wide.
 
+
+### Find missing
+In order to find datasets that exist in SOLR (via search) but are not in the DB, you can use the `find_missing.py` script:
+
+    $ pipenv run python find_missing.py
+
+This should print to `broken_datasets.jsonld` a list of packages in SOLR that gives a 404 when trying to access the page.
+
+To see all options, use `--help`.
 ## Development
 
 Install the latest dependencies.
