@@ -233,8 +233,17 @@ class CkanApiClient(object):
         return response.json()['result']
 
     def get_harvest_sources(self):
-        response = self.get('/action/package_search?fq=dataset_type:harvest&rows=10000')
-        return response.json()['result']['results']
+        start = 0
+        harvest_sources = []
+        while True:
+            response = self.get(f'/action/package_search?fq=dataset_type:harvest&rows=1000&start={start}')
+            harvest_sources += response.json()['result']['results']
+            if(response.json()['result']['count'] <= start + 1000):
+                break
+            else:
+                start += 1000
+            
+        return harvest_sources
 
     def get_organization_count(self, organization_name):
         response = self.get('/action/package_search?q=organization:%s&rows=0' % organization_name)
