@@ -1,0 +1,24 @@
+---
+name: Check harvest source duplicates
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check_harvest_source_duplicates:
+    name: Check Harvest Source Duplicates
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Install pipenv
+        run: pip install pipenv
+      - name: build
+        run: pipenv sync
+      - name: run check
+        run: pipenv run python duplicate-packages-organization.py --harvest_sources --run-id=test
+      - name: save file
+        uses: actions/upload-artifact@v2
+        with:
+          name: harvest_overview
+          path: harvest-duplicates-test.csv
