@@ -151,6 +151,25 @@ class CkanApiClient(object):
         # If you want to run 2 scripts in parallel, run one version with normal sort
         # and another with `--reverse` flag
         return sorted(dupes, reverse=self.reverse)
+    
+    def get_duplicate_identifiers_source(self, harvest_source_title, is_collection, full_count=False):
+        filter_query = 'harvest_source_title:"%s" AND type:dataset' % harvest_source_title
+        if is_collection:
+            filter_query = '%s AND collection_package_id:*' % filter_query
+
+        response = self.get('/3/action/package_search', params={
+            'fq': filter_query,
+            'facet.field': '["' + self.identifier_type + '"]',
+            'facet.limit': -1,
+            'facet.mincount': 2,
+            'rows': 0,
+        })
+
+        dupes = response.json()['result']['facets'][self.identifier_type]
+
+        # If we want not just the identifiers, but also the counts
+        if full_count:
+            return dupes
 
     def get_dataset_count(self, organization_name, identifier, is_collection):
         filter_query = \
@@ -213,9 +232,16 @@ class CkanApiClient(object):
         response = self.get('/action/organization_list')
         return response.json()['result']
 
-    def get_organization_count(self, organization_name):
+    def get_harvest_sources(self):
+        response = self.get('/action/package_search?fq=dataset_type:harvest&rows=10000')
+        return response.json()['result']['results']
 
+    def get_organization_count(self, organization_name):
         response = self.get('/action/package_search?q=organization:%s&rows=0' % organization_name)
+        return response.json()['result']['count']
+    
+    def get_harvest_source_count(self, harvest_source_title):
+        response = self.get('/action/package_search?q=harvest_source_title:"%s"&rows=0' % harvest_source_title)
         return response.json()['result']['count']
 
     def remove_package(self, package_id):
