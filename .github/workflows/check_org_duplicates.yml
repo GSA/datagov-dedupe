@@ -1,7 +1,7 @@
 ---
 name: Check org duplicates
 
-on:
+on:   # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 jobs:
@@ -22,4 +22,3 @@ jobs:
         with:
           name: org_overview
           path: org-duplicates-test.csv
-
