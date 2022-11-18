@@ -130,7 +130,7 @@ class CkanApiClient(object):
             "/action/package_search",
             params={
                 "fq": filter_query,
-                "sort": "metadata_created " + sort_order,
+                "sort": "metadata_modified " + sort_order,
                 "rows": rows,
             },
         )
