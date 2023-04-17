@@ -6,8 +6,13 @@ on:
     inputs:
       geospatial:
         type: boolean
-        description: Whether organization has datajson duplicates or geospatial
+        description: Check if organization has geospatial duplicates
         required: true
+      dryrun:
+        type: boolean
+        description: Only run the dryrun
+        required: true
+        default: true
       organization:
         description: 'Organization'
         required: true
@@ -169,9 +174,10 @@ on:
         - wvu-edu
 
 jobs:
-  dry_run_dedupe:
+  dedupe:
     name: Run de-dupe
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -184,9 +190,14 @@ jobs:
           pip install pipenv
       - name: build
         run: pipenv sync
-      - name: run geospatial
-        if: ${{ inputs.geospatial }}
-        run: pipenv run python duplicates-identifier-api.py --geospatial ${{ inputs.organization }}
-      - name: run datajson
-        if: ${{ ! inputs.geospatial }}
-        run: pipenv run python duplicates-identifier-api.py ${{ inputs.organization }}
+      - name: run dedupe with proper flags
+        run: |
+          args=''
+          if ${{ inputs.geospatial }}; then
+            args="${args} --geospatial"
+          fi
+          if ! ${{ inputs.dryrun }}; then
+            args="${args} --commit"
+            args="${args} --api-key ${{secrets.CKAN_API_TOKEN}}"
+          fi
+          pipenv run python duplicates-identifier-api.py $args ${{ inputs.organization }}
