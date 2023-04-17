@@ -176,6 +176,7 @@ jobs:
   dedupe:
     name: Run de-dupe
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -196,5 +197,6 @@ jobs:
           fi
           if ! ${{ inputs.dryrun }}; then
             args="${args} --commit"
+            args="${args} --api-key ${{secrets.CKAN_API_TOKEN}}"
           fi
           pipenv run python duplicates-identifier-api.py $args ${{ inputs.organization }}
