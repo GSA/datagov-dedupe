@@ -12,6 +12,7 @@ on:
         type: boolean
         description: Only run the dryrun
         required: true
+        default: true
       organization:
         description: 'Organization'
         required: true
