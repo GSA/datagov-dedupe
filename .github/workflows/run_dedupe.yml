@@ -20,13 +20,15 @@ on:
         type: choice
         options:
         - allegheny-county-city-of-pittsburgh-western-pa-regional-data-center
-        - alcc-fws-gov
+        - americorps-gov
+        - arkansas-gov
         - arlington-county
-        - usace-army-mil
         - board-of-governors-of-the-federal-reserve-system
-        - cdph-ca-gov
-        - austin-utexas-edu
-        - centers-for-disease-control-and-prevention
+        - ca-gov
+        - cdatribe-nsn-gov
+        - cdip-ucsd-edu
+        - census-gov
+        - cfpb-gov
         - city-and-county-of-durham-north-carolina
         - city-of-austin
         - city-of-baltimore
@@ -43,7 +45,6 @@ on:
         - city-of-los-angeles
         - city-of-new-orleans
         - city-of-new-york
-        - orem-org
         - city-of-philadelphia
         - city-of-providence
         - city-of-san-francisco
@@ -52,125 +53,104 @@ on:
         - city-of-sioux-falls
         - city-of-somerville
         - city-of-tempe
-        - cdatribe-nsn-gov
-        - cfpb-gov
+        - coa-gatech-edu
+        - commodity-futures-trading-commission
         - cook-county-of-illinois
-        - usda-gov
+        - cpsc-gov
+        - dhs-gov
+        - district-of-columbia
         - doc-gov
         - dod-gov
-        - ed-gov
         - doe-gov
-        - dhs-gov
-        - hud-gov
+        - doi-gov
         - doj-gov
         - dol-gov
-        - state-gov
-        - doi-gov
-        - treasury-gov
         - dot-gov
-        - va-gov
-        - edac-unm-edu
         - eac-gov
+        - ed-gov
+        - edac-unm-edu
+        - eeoc-gov
         - eop-gov
+        - epa-gov
         - exim-gov
         - fairfax-county-virginia
-        - fsa-usda-gov
         - fcc-gov
         - fdic-gov
         - fec-gov
-        - fema-gov
-        - fgdc-gov
-        - fhfa-gov
         - federal-laboratory-consortium
         - federal-retirement-thrift-investment-board
         - federal-trade-commission
+        - fema-gov
+        - fgdc-gov
+        - fhfa-gov
         - florida-department-of-environmental-protection
         - gsa-gov
-        - coa-gatech-edu
         - gulf-coast-ecosystem-restoration-council
-        - isu-edu
-        - imls-gov
+        - hhs-gov
+        - hud-gov
         - ibwc-gov
-        - iastate-edu
-        - kgs-ku-edu
+        - imls-gov
         - king-county-washington
         - lake-county-illinois
         - legal-services-corporation
         - library-of-congress
         - loudoun-county-virginia
-        - lagic-lsu-edu
         - louisville-metro-government
-        - mspb-gov
-        - metc-state-mn-us
         - mcc-gov
-        - dnr-state-mn-us
-        - missouri-edu
         - montgomery-county-of-maryland
+        - mspb-gov
         - municipality-of-anchorage
-        - nasa-gov
         - nara-gov
+        - nasa-gov
         - national-credit-union-administration
+        - national-institute-of-standards-and-technology
+        - nc-gov
+        - nd-gov
         - neh-gov
         - nga-mil
-        - national-institute-of-standards-and-technology
+        - nitrd-gov
         - noaa-gov
+        - nrc-gov
         - nsf-gov
         - ntsb-gov
-        - nitrd-gov
-        - nsgic-education-gis-inventory
-        - nsgic-local-govt-gis-inventory
-        - nsgic-non-profit-gis-inventory
-        - nsgic-private-gis-inventory
-        - nsgic-regional-gis-inventory
-        - nsgic-state-gis-inventory
-        - nsgic-tribal-gis-inventory
-        - nrc-gov
         - office-of-management-and-budget
         - onhir-gov
-        - opm-gov
         - opentopography
-        - oregonstate-edu
-        - pennsylvania-geospatial-data-clearinghouse
+        - opm-gov
         - pbgc-gov
+        - pennsylvania-geospatial-data-clearinghouse
         - rrb-gov
         - sandbox-organization
-        - cdip-ucsd-edu
-        - sec-gov
         - sba-gov
+        - sec-gov
         - ssa-gov
+        - state-gov
+        - state-mn-us
         - state-of-alaska
-        - arkansas-gov
-        - ca-gov
         - state-of-connecticut
         - state-of-hawaii
         - state-of-illinois
         - state-of-iowa
         - state-of-maryland
-        - state-mn-us
         - state-of-missouri
         - state-of-new-york
-        - nc-gov
-        - nd-gov
         - state-of-oklahoma
         - state-of-oregon
         - state-of-washington
         - town-of-cary-north-carolina
         - town-of-chapel-hill-north-carolina
-        - un-org
-        - uidaho-edu
-        - u-washington-edu
-        - usaid-gov
-        - census-gov
-        - cpsc-gov
-        - hhs-gov
+        - treasury-gov
         - u-s-department-of-labor-bureau-of-labor-statistics
-        - epa-gov
-        - eeoc-gov
+        - u-washington-edu
+        - uidaho-edu
+        - usace-army-mil
+        - usaid-gov
+        - usda-gov
         - usgs-gov
         - usitc-gov
+        - va-gov
         - vcgi-org
         - wake-county
-        - wwhgd-nga-org
         - wvu-edu
 
 jobs:
