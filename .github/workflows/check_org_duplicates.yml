@@ -23,7 +23,7 @@ jobs:
       - name: run check
         run: pipenv run python duplicate-packages-organization.py --run-id=test
       - name: save file
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: org_overview
           path: org-duplicates-test.csv
