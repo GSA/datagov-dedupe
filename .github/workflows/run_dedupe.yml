@@ -161,9 +161,9 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python 3.12
         uses: actions/setup-python@v1
-        with: { python-version: 3.8 }
+        with: { python-version: 3.12 }
       - name: Install pip and pipenv
         run: |
           python -m pip install --upgrade pip
