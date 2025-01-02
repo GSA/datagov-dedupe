@@ -8,6 +8,14 @@ on:
         type: boolean
         description: Check if organization has geospatial duplicates
         required: true
+      keep:
+        type: choice
+        description: 'Keep'
+        required: true
+        default: 'newest'
+        options:
+        - newest
+        - oldest
       dryrun:
         type: boolean
         description: Only run the dryrun
@@ -176,6 +184,8 @@ jobs:
           if ${{ inputs.geospatial }}; then
             args="${args} --geospatial"
           fi
+          if ${{ inputs.keep == 'newest' }}; then
+            args="${args} --newest"
           if ! ${{ inputs.dryrun }}; then
             args="${args} --commit"
             args="${args} --api-key ${{secrets.CKAN_API_TOKEN}}"
