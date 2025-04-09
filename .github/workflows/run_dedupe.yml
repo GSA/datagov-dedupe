@@ -8,6 +8,10 @@ on:
         type: boolean
         description: Check if organization has geospatial duplicates
         required: true
+      goodname:
+        type: boolean
+        description: Check if the shortest name to be kept
+        required: true
       keep:
         type: choice
         description: 'Keep'
@@ -184,10 +188,18 @@ jobs:
           if ${{ inputs.geospatial }}; then
             args="${args} --geospatial"
           fi
+
+          if ${{ inputs.goodname }}; then
+            args="${args} --update-name"
+          fi
+
           if ${{ inputs.keep == 'newest' }}; then
             args="${args} --newest"
+          fi
+
           if ! ${{ inputs.dryrun }}; then
             args="${args} --commit"
             args="${args} --api-key ${{secrets.CKAN_API_TOKEN}}"
           fi
-          pipenv run python duplicates-identifier-api.py $args ${{ inputs.organization }}
+
+          pipenv run python duplicates-identifier-api.py ${args} ${{ inputs.organization }}
